@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.android_authorization"
+    namespace = "com.example.aigpsradio"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.android_authorization"
+        applicationId = "com.example.aigpsradio"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
