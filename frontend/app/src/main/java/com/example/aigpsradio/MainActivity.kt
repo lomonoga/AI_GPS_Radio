@@ -8,9 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
+import com.example.aigpsradio.navigation.AppNavHost
 import com.example.aigpsradio.ui.InterestsSelectionScreen
 import com.example.aigpsradio.ui.PermissionsScreenSimple
 import com.example.aigpsradio.ui.VoiceInterestsScreen
@@ -22,8 +25,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
+
+                val navController = rememberNavController()
+                AppNavHost(navHostController = navController)
+
                 // Для демо - версия с кнопками навигации
-                AppScreenPreview()
+                // AppScreenPreview()
 
                 // Для продакшна - обычный flow
                 // AppNavigationFlow()
@@ -46,7 +53,8 @@ fun AppNavigationFlow() {
                 initialLocationGranted = true,
                 initialBackgroundGranted = false,
                 initialMicGranted = false,
-                initialNotifsGranted = false
+                initialNotifsGranted = false,
+                onContinue = TODO()
             )
             // Для перехода на следующий экран можно добавить onContinue callback
             // В данный момент переход ручной через кнопки
@@ -74,7 +82,7 @@ fun AppNavigationFlow() {
             Surface(modifier = Modifier.fillMaxSize()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
+                    contentAlignment = Alignment.Center
                 ) {
                     Text("Главный экран приложения")
                 }
@@ -117,7 +125,13 @@ fun AppScreenPreview(startScreen: Screen = Screen.Permissions) {
 
             Box(modifier = Modifier.weight(1f)) {
                 when (currentScreen) {
-                    Screen.Permissions -> PermissionsScreenSimple(initialLocationGranted = true)
+                    Screen.Permissions -> PermissionsScreenSimple(
+                        initialLocationGranted = true,
+                        initialBackgroundGranted = TODO(),
+                        initialMicGranted = TODO(),
+                        initialNotifsGranted = TODO(),
+                        onContinue = TODO()
+                    )
                     Screen.InterestsSelection -> InterestsSelectionScreen(
                         onContinue = { currentScreen = Screen.VoiceInterests }
                     )
@@ -128,7 +142,7 @@ fun AppScreenPreview(startScreen: Screen = Screen.Permissions) {
                         Surface(modifier = Modifier.fillMaxSize()) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
-                                contentAlignment = androidx.compose.ui.Alignment.Center
+                                contentAlignment = Alignment.Center
                             ) {
                                 Text("Главный экран")
                             }
@@ -156,7 +170,11 @@ fun GreetingPreview() {
 fun PreviewPermissionsScreenDark() {
     MyApplicationTheme(darkTheme = true) {
         PermissionsScreenSimple(
-            initialLocationGranted = true
+            initialLocationGranted = true,
+            initialBackgroundGranted = TODO(),
+            initialMicGranted = TODO(),
+            initialNotifsGranted = TODO(),
+            onContinue = TODO()
         )
     }
 }
@@ -169,7 +187,11 @@ fun PreviewPermissionsScreenDark() {
 fun PreviewPermissionsScreenLight() {
     MyApplicationTheme(darkTheme = false) {
         PermissionsScreenSimple(
-            initialLocationGranted = true
+            initialLocationGranted = true,
+            initialBackgroundGranted = TODO(),
+            initialMicGranted = TODO(),
+            initialNotifsGranted = TODO(),
+            onContinue = TODO()
         )
     }
 }

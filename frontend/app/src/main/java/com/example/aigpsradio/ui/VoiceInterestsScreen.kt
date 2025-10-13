@@ -12,13 +12,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aigpsradio.R
 
 @Composable
 fun VoiceInterestsScreen(
-    onComplete: () -> Unit = {}
+    onComplete: () -> Unit = {},
+    onSkip: () -> Unit = {}
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -30,19 +32,31 @@ fun VoiceInterestsScreen(
                 tonalElevation = 4.dp,
                 shadowElevation = 4.dp
             ) {
-                Box(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                    contentAlignment = Alignment.Center
+
+                    horizontalArrangement = Arrangement.Center
                 ) {
+                    OutlinedButton(
+                        onClick = onSkip,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                    ) {
+                        Text("Пропустить")
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
                     Button(
                         onClick = onComplete,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(1f)
                             .height(52.dp)
                     ) {
-                        Text("Завершить настройку")
+                        Text("Подтвердить ввод")
                     }
                 }
             }
@@ -132,4 +146,10 @@ fun VoiceInterestsScreen(
             Spacer(modifier = Modifier.weight(1f))
         }
     }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun VoiceInterestsScreenPrewiew() {
+    VoiceInterestsScreen()
 }

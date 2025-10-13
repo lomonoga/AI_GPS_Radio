@@ -123,7 +123,8 @@ fun PermissionsScreenSimple(
     initialLocationGranted: Boolean = false,
     initialBackgroundGranted: Boolean = false,
     initialMicGranted: Boolean = false,
-    initialNotifsGranted: Boolean = false
+    initialNotifsGranted: Boolean = false,
+    onContinue: () -> Unit
 ) {
     var locationGranted by remember { mutableStateOf(initialLocationGranted) }
     var backgroundGranted by remember { mutableStateOf(initialBackgroundGranted) }
@@ -151,12 +152,12 @@ fun PermissionsScreenSimple(
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = { /* TODO */ },
+                        onClick = onContinue,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
                     ) {
-                        Text("Продолжить")
+                        Text("Завершить настройку")
                     }
                 }
             }
@@ -259,7 +260,8 @@ fun TopAppBarSimple(title: String) {
 fun PreviewPermissionsScreenDark() {
     MyApplicationTheme(darkTheme = true) {
         PermissionsScreenSimple(
-            initialLocationGranted = true
+            initialLocationGranted = true,
+            onContinue = {}
         )
     }
 }
@@ -274,7 +276,8 @@ fun PreviewPermissionsScreenDark() {
 fun PreviewPermissionsScreenLight() {
     MyApplicationTheme(darkTheme = false) {
         PermissionsScreenSimple(
-            initialLocationGranted = true
+            initialLocationGranted = true,
+            onContinue = {}
         )
     }
 }
