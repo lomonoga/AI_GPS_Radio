@@ -14,6 +14,8 @@ coroutines = "1.7.3"
 retrofit = "2.9.0"
 securityCrypto = "1.1.0-alpha06"
 lottie = "6.1.0"
+playServicesLocation = "21.3.0"
+media3CommonKtx = "1.8.0"
 
 
 [libraries]
@@ -54,6 +56,10 @@ lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", versio
 # Retrofit2 (запросы на сервер)
 com-squareup-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 com-squareup-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+
+# Location
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 
 
 [plugins]
