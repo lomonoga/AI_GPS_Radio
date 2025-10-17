@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.aigpsradio.ui.InterestsSelectionScreen
 import com.example.aigpsradio.ui.PermissionsScreenSimple
+import com.example.aigpsradio.ui.PlayerScreen
 import com.example.aigpsradio.ui.VoiceInterestsScreen
 
 @Composable
@@ -63,12 +64,7 @@ fun AppNavHost(
         }
 
         composable(route = Destination.Player.route) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                androidx.compose.material3.Text("Player Screen")
-            }
+            PlayerScreen()
         }
     }
 }
