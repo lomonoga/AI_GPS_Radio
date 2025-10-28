@@ -70,4 +70,15 @@ dependencies {
     implementation(libs.com.squareup.retrofit)
     implementation(libs.com.squareup.converter.gson)
     implementation(libs.play.services.location)
+
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation("com.github.MKergall:osmbonuspack:6.9.0")
+
+    // ExoPlayer (Media3) and OkHttp integration
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation("androidx.media3:media3-datasource-okhttp:1.4.1")
+
+    // OkHttp
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 }
