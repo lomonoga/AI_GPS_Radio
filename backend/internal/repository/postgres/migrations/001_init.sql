@@ -18,12 +18,3 @@ CREATE TABLE IF NOT EXISTS poi_files (
     is_short BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Индексы для точек интереса
-CREATE INDEX IF NOT EXISTS idx_poi_location ON points_of_interest USING GIST(location);
-CREATE INDEX IF NOT EXISTS idx_poi_created_at ON points_of_interest(created_at);
-
--- Индексы для аудио файлов
-CREATE INDEX IF NOT EXISTS idx_poi_audio_poi_id ON poi_audio_files(poi_id);
-CREATE INDEX IF NOT EXISTS idx_poi_audio_is_short ON poi_audio_files(is_short);
-CREATE INDEX IF NOT EXISTS idx_poi_audio_s3_key ON poi_audio_files(s3_key);

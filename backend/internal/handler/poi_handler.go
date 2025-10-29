@@ -46,7 +46,7 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 	lngStr := query.Get("longitude")
 
 	if latStr == "" || lngStr == "" {
-		h.writeError(w, http.StatusBadRequest, "Parameters 'lat' and 'lng' are required")
+		h.writeError(w, http.StatusBadRequest, "Parameters 'latitude' and 'longitude' are required")
 		return
 	}
 
