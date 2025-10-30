@@ -34,10 +34,10 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
         )
         SELECT 
             np.id, np.name, np.description, np.latitude, np.longitude, np.created_at,
-            f.id, f.s3_key, f.file_name, f.file_size, f.mime_type, f.is_short, f.created_at
+            f.id, f.s3_key, f.file_name, f.file_size, f.mime_type, f.serial_number, f.is_short, f.created_at
         FROM nearest_poi np
         LEFT JOIN poi_files f ON np.id = f.poi_id
-        ORDER BY f.is_short DESC, f.created_at ASC
+        ORDER BY f.is_short DESC, f.serial_number ASC
     `
 
 	rows, err := r.db.Query(query, longitude, latitude)
@@ -69,6 +69,7 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
 				&file.FileName,
 				&file.FileSize,
 				&file.MimeType,
+				&file.SerialNumber,
 				&file.IsShort,
 				&file.CreatedAt,
 			)
@@ -88,6 +89,7 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
 				&file.FileName,
 				&file.FileSize,
 				&file.MimeType,
+				&file.SerialNumber,
 				&file.IsShort,
 				&file.CreatedAt,
 			)

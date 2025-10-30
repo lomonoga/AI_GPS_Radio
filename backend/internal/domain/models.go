@@ -3,13 +3,14 @@ package domain
 import "time"
 
 type File struct {
-	ID        int64     `json:"id,omitempty"`
-	S3Key     string    `json:"s3_key"`
-	FileName  string    `json:"file_name"`
-	FileSize  int64     `json:"file_size,omitempty"`
-	MimeType  string    `json:"mime_type,omitempty"`
-	IsShort   bool      `json:"is_short"`
-	CreatedAt time.Time `json:"created_at"`
+	ID           int64     `json:"id,omitempty"`
+	S3Key        string    `json:"s3_key"`
+	FileName     string    `json:"file_name"`
+	FileSize     int64     `json:"file_size,omitempty"`
+	MimeType     string    `json:"mime_type,omitempty"`
+	SerialNumber int64     `json:"serial_number"`
+	IsShort      bool      `json:"is_short"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type PointOfInterest struct {
