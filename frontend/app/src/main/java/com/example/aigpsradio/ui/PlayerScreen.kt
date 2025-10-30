@@ -126,6 +126,15 @@ fun PlayerScreen(viewModel: LocationViewModel) {
                     contentDescription = "My Location"
                 )
             }
+            // --- Плеер снизу ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 0.dp) // можно добавить, если хочешь отступ
+            ) {
+                MinioStreamScreen() // вставляем плеер как выдвигающийся бар
+            }
         }
     }
 }
