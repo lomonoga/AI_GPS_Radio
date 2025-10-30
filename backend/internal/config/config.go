@@ -25,7 +25,7 @@ func Load() *Config {
 			DBUser:     getEnv("DB_USER_AIGPSSERVICE", "postgres"),
 			DBPassword: getEnv("DB_PASSWORD_AIGPSSERVICE", "postgres"),
 			DBName:     getEnv("DB_NAME_AIGPSSERVICE", "aigpsservice"),
-			ServerPort: getEnv("DB_SERVER_PORT_AIGPSSERVICE", "8080"),
+			ServerPort: getEnv("SERVER_PORT_AIGPSSERVICE", "8765"),
 		}
 	})
 	return configInstance

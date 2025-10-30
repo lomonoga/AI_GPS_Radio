@@ -48,12 +48,12 @@ services:
       DB_USER_AIGPSSERVICE: postgres
       DB_PASSWORD_AIGPSSERVICE: postgres
       DB_NAME_AIGPSSERVICE: aigpsservice
-      DB_SERVER_PORT_AIGPSSERVICE: 8080
+      SERVER_PORT_AIGPSSERVICE: 8765
       MINIO_ENDPOINT_AIGPSSERVICE: minio:9000
       MINIO_ACCESS_KEY_AIGPSSERVICE: minioadmin
       MINIO_SECRET_KEY_AIGPSSERVICE: minioadmin
     ports:
-      - "8080:8080"
+      - "8765:8765"
     depends_on:
       postgres:
         condition: service_healthy
