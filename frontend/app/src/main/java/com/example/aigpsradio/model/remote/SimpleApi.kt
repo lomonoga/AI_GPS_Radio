@@ -13,7 +13,7 @@ interface SimpleApi {
     @POST("nearest")
     suspend fun sendLocation(
         @Body payload: LocationPayload
-    ): Response<ResponseBody>
+    ): Response<NearestPlaceResponse>
 
     @Streaming
     @POST("stream")

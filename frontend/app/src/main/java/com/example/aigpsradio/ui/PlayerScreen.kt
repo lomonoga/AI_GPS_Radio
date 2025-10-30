@@ -1,73 +1,131 @@
 package com.example.aigpsradio.ui
 
 import android.content.ContentValues.TAG
-import android.content.Intent
-import android.os.Build
 import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import com.example.aigpsradio.model.location.LocationService
-import com.example.aigpsradio.ui.theme.MyApplicationTheme
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.aigpsradio.R
+import com.example.aigpsradio.viewmodel.LocationViewModel
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 
 @Composable
-fun PlayerScreen() {
-    val context = LocalContext.current
+fun PlayerScreen(viewModel: LocationViewModel) {
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Button(onClick = {
-            Intent(context.applicationContext, LocationService::class.java).apply {
-                action = LocationService.ACTION_START
+    var mapView by remember { mutableStateOf<MapView?>(null) } // Переменная для хранения карты
+    var locationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    // Слой на карте, который отображает местоположение
 
-                Log.d(
-                    TAG,
-                    "Using ContextCompat.startForegroundService() (API ${Build.VERSION.SDK_INT})"
-                )
-                ContextCompat.startForegroundService(context.applicationContext, this)
-            }
-        }) {
-            Text(text = "Start")
+    // Автоматический запуск отслеживания при создании экрана
+    LaunchedEffect(Unit) {
+        viewModel.startLocationTracking()
+        Log.d(TAG, "PlayerScreen created, starting location tracking")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = {
-            Log.d(TAG, "Stop button clicked — stopping service")
-            Intent(context.applicationContext, LocationService::class.java).apply {
-                action = LocationService.ACTION_STOP
-                context.startService(this)
-                Log.d(TAG, "Requested context.stopService()")
+    // Управление жизненным циклом MapView
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> { mapView?.onResume() }
+                Lifecycle.Event.ON_PAUSE -> { mapView?.onPause() }
+                else -> {}
             }
-        }) {
-            Text(text = "Stop")
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {  // при уничтожении экрана
+            lifecycleOwner.lifecycle.removeObserver(observer) // отписываемся
+            locationOverlay?.disableMyLocation() // выключаем отслеживание
+            mapView?.overlays?.clear() // очищаем все слои карты
+            mapView?.onDetach() // отключаем карту
+            Log.d(TAG, "PlayerScreen disposed, map cleaned up")
         }
     }
-}
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Карта занимает ВЕСЬ экран
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            AndroidView(
+                factory = { ctx ->
+                    MapView(ctx).apply {
+                        setTileSource(TileSourceFactory.MAPNIK)
+                        setMultiTouchControls(true)
 
-@Preview(
-    showBackground = true,
-    device = "id:pixel_6",
-    name = "Pixel 6 Light Theme",
-)
-@Composable
-fun PreviewPlayerScreen() {
-    MyApplicationTheme(darkTheme = false) {
-        PlayerScreen()
+                        // Настройки зума
+                        controller.setZoom(15.0)
+                        controller.setCenter(GeoPoint(56.837502, 60.608574))
+                        minZoomLevel = 4.0
+                        maxZoomLevel = 20.0
+
+                        // Добавляем overlay для отображения текущей позиции
+                        val myLocationOverlay = MyLocationNewOverlay(
+                            GpsMyLocationProvider(ctx),
+                            this
+                        )
+
+                        myLocationOverlay.enableMyLocation()
+                        myLocationOverlay.enableFollowLocation()
+                        overlays.add(myLocationOverlay)
+
+                        locationOverlay = myLocationOverlay
+                        mapView = this
+
+                        Log.d(TAG, "MapView initialized")
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // Кнопки управления внизу
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    // Центрируем карту на текущей позиции
+                    val overlay = locationOverlay
+                    val mv = mapView
+                    if (overlay != null && mv != null) {
+                        overlay.myLocation?.let { loc ->
+                            mv.controller.animateTo(loc)
+                            Log.d(TAG, "Centered map on current location")
+                        } ?: run {
+                            Log.d(TAG, "Current location is null — cannot center")
+                        }
+                    }
+            },
+                modifier = Modifier.size(56.dp) // стандартный размер FAB
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_my_location),
+                    contentDescription = "My Location"
+                )
+            }
+        }
     }
 }
