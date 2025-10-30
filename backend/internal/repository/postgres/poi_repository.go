@@ -50,7 +50,13 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
 
 	for rows.Next() {
 		var fileID sql.NullInt64
-		var file domain.File
+		var s3Key sql.NullString
+		var fileName sql.NullString
+		var fileSize sql.NullInt64
+		var mimeType sql.NullString
+		var serialNumber sql.NullInt64
+		var isShort sql.NullBool
+		var fileCreatedAt sql.NullTime
 
 		if poi == nil {
 			poi = &domain.PointOfInterest{
@@ -65,13 +71,13 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
 				&poi.Longitude,
 				&poi.CreatedAt,
 				&fileID,
-				&file.S3Key,
-				&file.FileName,
-				&file.FileSize,
-				&file.MimeType,
-				&file.SerialNumber,
-				&file.IsShort,
-				&file.CreatedAt,
+				&s3Key,
+				&fileName,
+				&fileSize,
+				&mimeType,
+				&serialNumber,
+				&isShort,
+				&fileCreatedAt,
 			)
 			if err != nil {
 				return nil, fmt.Errorf("scan error: %w", err)
@@ -85,13 +91,13 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
 				&poi.Longitude,
 				&poi.CreatedAt,
 				&fileID,
-				&file.S3Key,
-				&file.FileName,
-				&file.FileSize,
-				&file.MimeType,
-				&file.SerialNumber,
-				&file.IsShort,
-				&file.CreatedAt,
+				&s3Key,
+				&fileName,
+				&fileSize,
+				&mimeType,
+				&serialNumber,
+				&isShort,
+				&fileCreatedAt,
 			)
 			if err != nil {
 				return nil, fmt.Errorf("scan error: %w", err)
@@ -99,10 +105,19 @@ func (r *poiRepository) FindNearestPOI(latitude, longitude float64) (*domain.Poi
 		}
 
 		if fileID.Valid {
-			file.ID = fileID.Int64
+			file := domain.File{
+				ID:           fileID.Int64,
+				S3Key:        s3Key.String,
+				FileName:     fileName.String,
+				FileSize:     fileSize.Int64,
+				MimeType:     mimeType.String,
+				SerialNumber: serialNumber.Int64,
+				IsShort:      isShort.Bool,
+				CreatedAt:    fileCreatedAt.Time,
+			}
 
 			if file.IsShort {
-				poi.ShortAudioFile = file
+				poi.ShortAudioFile = &file
 			} else {
 				poi.FullAudioFiles = append(poi.FullAudioFiles, file)
 			}

@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type File struct {
-	ID           int64     `json:"id,omitempty"`
+	ID           int64     `json:"id"`
 	S3Key        string    `json:"s3_key"`
 	FileName     string    `json:"file_name"`
 	FileSize     int64     `json:"file_size,omitempty"`
@@ -16,11 +16,11 @@ type File struct {
 type PointOfInterest struct {
 	ID             int64     `json:"id"`
 	Name           string    `json:"name"`
-	Description    string    `json:"description"`
+	Description    string    `json:"description,omitempty"`
 	Latitude       float64   `json:"latitude"`
 	Longitude      float64   `json:"longitude"`
-	FullAudioFiles []File    `json:"full_audio_files"`
-	ShortAudioFile File      `json:"short_audio_file"`
+	FullAudioFiles []File    `json:"full_audio_files,omitempty"`
+	ShortAudioFile *File     `json:"short_audio_file,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 
