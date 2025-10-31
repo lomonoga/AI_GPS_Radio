@@ -1,6 +1,7 @@
 package com.example.aigpsradio.ui
 
 import androidx.annotation.OptIn
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -8,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -43,6 +43,9 @@ fun MinioStreamScreen() {
 
     // Состояние для отслеживания воспроизведения
     var isPlaying by remember { mutableStateOf(false) }
+
+    var expanded by remember { mutableStateOf(false) } // свернут/развернут
+    val height by animateDpAsState(if (expanded) 300.dp else 80.dp) // анимируем высоту
 
     // Управление lifecycle плеера
     DisposableEffect(lifecycleOwner) {
@@ -80,18 +83,28 @@ fun MinioStreamScreen() {
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp) // ограничиваем высоту
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .height(height)
+            .padding(4.dp)
     ) {
-        Text("ИИ-радио для путешественников онлайн", maxLines = 1)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Кнопка для выдвижения/сворачивания
+            Button(onClick = { expanded = !expanded }) {
+                Text(if (expanded) "Свернуть" else "Развернуть")
+            }
+
+            // Контент виден только в развернутом виде
+            if (expanded) {
+                Text("ИИ-радио для путешественников онлайн", maxLines = 1)
 
         Button(
-            onClick = { viewModel.loadAudio("audio.m4a", context) },
+            onClick = { viewModel.loadAudio("plotinka_part1.m4a", context) },
             enabled = !uiState.isLoading
         ) {
             Text("Начать воспроизведение трека")
@@ -113,10 +126,11 @@ fun MinioStreamScreen() {
                 Text(if (isPlaying) "Пауза" else "Продолжить")
             }
         }
-
-        // Loading indicator
-        if (uiState.isLoading) {
-            CircularProgressIndicator()
+                // Loading indicator
+                if (uiState.isLoading) {
+                    CircularProgressIndicator()
+                }
+            }
         }
     }
 }
