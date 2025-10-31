@@ -195,7 +195,8 @@ fun PermissionsScreenSimple(
                     title = "Фоновая геолокация",
                     subtitle = "Для воспроизведения радио и отслеживания в фоне",
                     granted = backgroundGranted,
-                    onAction = { backgroundGranted = !backgroundGranted }
+                    onAction = { backgroundGranted = !backgroundGranted },
+                    showGrantedAsText = true
                 )
 
                 // Микрофон
@@ -204,7 +205,8 @@ fun PermissionsScreenSimple(
                     title = "Доступ к микрофону",
                     subtitle = "Для голосового управления и выбора интересов",
                     granted = micGranted,
-                    onAction = { micGranted = !micGranted }
+                    onAction = { micGranted = !micGranted },
+                    showGrantedAsText = true
                 )
 
                 // Уведомления
@@ -214,7 +216,8 @@ fun PermissionsScreenSimple(
                         title = "Уведомления",
                         subtitle = "Разрешение на показ уведомлений для управления воспроизведением",
                         granted = notifsGranted,
-                        onAction = { notifsGranted = !notifsGranted }
+                        onAction = { notifsGranted = !notifsGranted },
+                        showGrantedAsText = true
                     )
                 } else {
                     PermissionItem(
@@ -222,7 +225,8 @@ fun PermissionsScreenSimple(
                         title = "Уведомления (demo)",
                         subtitle = "Уведомления доступны на вашей версии",
                         granted = notifsGranted,
-                        onAction = { notifsGranted = !notifsGranted }
+                        onAction = { notifsGranted = !notifsGranted },
+                        showGrantedAsText = true
                     )
                 }
 

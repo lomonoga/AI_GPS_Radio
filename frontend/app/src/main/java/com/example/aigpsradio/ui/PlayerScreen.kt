@@ -2,7 +2,6 @@ package com.example.aigpsradio.ui
 
 import android.content.ContentValues.TAG
 import android.util.Log
-import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +21,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
-@OptIn
+@ExperimentalMaterial3Api
 @Composable
 fun PlayerScreen(viewModel: LocationViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -56,58 +55,65 @@ fun PlayerScreen(viewModel: LocationViewModel) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // --- Карта ---
-        AndroidView(
-            factory = { ctx ->
-                MapView(ctx).apply {
-                    setTileSource(TileSourceFactory.MAPNIK)
-                    setMultiTouchControls(true)
-                    controller.setZoom(15.0)
-                    controller.setCenter(GeoPoint(56.837502, 60.608574))
-                    minZoomLevel = 4.0
-                    maxZoomLevel = 20.0
-
-                    val overlay = MyLocationNewOverlay(
-                        GpsMyLocationProvider(ctx),
-                        this
-                    )
-                    overlay.enableMyLocation()
-                    overlay.enableFollowLocation()
-                    overlays.add(overlay)
-
-                    locationOverlay = overlay
-                    mapView = this
-                }
-            },
-            modifier = Modifier.fillMaxSize()
+    // --- Bottom sheet state (starts partially expanded) ---
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded,
+            skipHiddenState = true
         )
+    )
 
-        // --- FAB для центрирования карты ---
-        FloatingActionButton(
-            onClick = {
-                locationOverlay?.myLocation?.let { loc ->
-                    mapView?.controller?.animateTo(loc)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd) // правый нижний угол
-                .padding(end = 20.dp, bottom = 90.dp) // отступы от краёв
-                .size(56.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_my_location),
-                contentDescription = "My Location"
-            )
-        }
-
-        // --- Выдвижной медиабар снизу ---
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-        ) {
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 120.dp,
+        sheetContent = {
             MinioStreamScreen()
+        }
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // --- Map in background ---
+            AndroidView(
+                factory = { ctx ->
+                    MapView(ctx).apply {
+                        setTileSource(TileSourceFactory.MAPNIK)
+                        setMultiTouchControls(true)
+                        controller.setZoom(15.0)
+                        controller.setCenter(GeoPoint(56.837502, 60.608574))
+                        minZoomLevel = 4.0
+                        maxZoomLevel = 20.0
+
+                        val overlay = MyLocationNewOverlay(
+                            GpsMyLocationProvider(ctx),
+                            this
+                        )
+                        overlay.enableMyLocation()
+                        overlay.enableFollowLocation()
+                        overlays.add(overlay)
+
+                        locationOverlay = overlay
+                        mapView = this
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // --- FAB для центрирования карты ---
+            FloatingActionButton(
+                onClick = {
+                    locationOverlay?.myLocation?.let { loc ->
+                        mapView?.controller?.animateTo(loc)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd) // правый нижний угол
+                    .padding(end = 20.dp, bottom = 140.dp) // отступы от краёв
+                    .size(56.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_my_location),
+                    contentDescription = "My Location"
+                )
+            }
         }
     }
 }
