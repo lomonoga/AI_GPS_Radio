@@ -15,13 +15,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aigpsradio.R
 import com.example.aigpsradio.viewmodel.LocationViewModel
+import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
-@ExperimentalMaterial3Api
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(viewModel: LocationViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -62,12 +63,18 @@ fun PlayerScreen(viewModel: LocationViewModel) {
             skipHiddenState = true
         )
     )
+    val scope = rememberCoroutineScope()
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        sheetPeekHeight = 120.dp,
+        sheetPeekHeight = 150.dp,
         sheetContent = {
-            MinioStreamScreen()
+            MinioStreamScreen(onPlay = {
+                scope.launch {
+                    // Популярный API: expand(); если в твоей версии нет — используй animateTo(SheetValue.Expanded)
+                    scaffoldState.bottomSheetState.expand()
+                }
+            })
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -106,7 +113,7 @@ fun PlayerScreen(viewModel: LocationViewModel) {
                 },
                 modifier = Modifier
                     .align(Alignment.BottomEnd) // правый нижний угол
-                    .padding(end = 20.dp, bottom = 140.dp) // отступы от краёв
+                    .padding(end = 20.dp, bottom = 180.dp) // отступы от краёв
                     .size(56.dp)
             ) {
                 Icon(

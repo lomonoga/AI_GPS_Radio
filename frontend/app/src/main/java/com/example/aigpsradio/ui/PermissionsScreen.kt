@@ -28,9 +28,7 @@ fun PermissionItem(
     icon: Int,
     title: String,
     subtitle: String,
-    granted: Boolean,
-    onAction: () -> Unit,
-    showGrantedAsText: Boolean = false // новый параметр
+    granted: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -85,12 +83,12 @@ fun PermissionItem(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (granted && showGrantedAsText) {
-                // ✅ Вместо кнопки показываем надпись с галочкой
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+            // Статус разрешения
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (granted) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
@@ -103,15 +101,19 @@ fun PermissionItem(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-            } else {
-                Button(
-                    onClick = onAction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                ) {
-                    Text(if (granted) "Разрешено" else "Разрешить")
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Ожидание разрешения...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
                 }
             }
         }
@@ -120,17 +122,12 @@ fun PermissionItem(
 
 @Composable
 fun PermissionsScreenSimple(
-    initialLocationGranted: Boolean = false,
-    initialBackgroundGranted: Boolean = false,
-    initialMicGranted: Boolean = false,
-    initialNotifsGranted: Boolean = false,
+    locationGranted: Boolean = false,
+    backgroundGranted: Boolean = false,
+    micGranted: Boolean = false,
+    notifsGranted: Boolean = false,
     onContinue: () -> Unit
 ) {
-    var locationGranted by remember { mutableStateOf(initialLocationGranted) }
-    var backgroundGranted by remember { mutableStateOf(initialBackgroundGranted) }
-    var micGranted by remember { mutableStateOf(initialMicGranted) }
-    var notifsGranted by remember { mutableStateOf(initialNotifsGranted) }
-
     val screenPadding = 16.dp
     val bottomBarHeight = 72.dp
 
@@ -179,14 +176,12 @@ fun PermissionsScreenSimple(
                     textAlign = TextAlign.Center
                 )
 
-                // Геолокация — показываем текст вместо кнопки, если разрешено
+                // Геолокация
                 PermissionItem(
                     icon = R.drawable.ic_location,
                     title = "Доступ к геолокации",
                     subtitle = "Для предоставления контента, основанного на вашем местоположении",
-                    granted = locationGranted,
-                    onAction = { locationGranted = !locationGranted },
-                    showGrantedAsText = true
+                    granted = locationGranted
                 )
 
                 // Фоновая геолокация
@@ -194,9 +189,7 @@ fun PermissionsScreenSimple(
                     icon = R.drawable.ic_location,
                     title = "Фоновая геолокация",
                     subtitle = "Для воспроизведения радио и отслеживания в фоне",
-                    granted = backgroundGranted,
-                    onAction = { backgroundGranted = !backgroundGranted },
-                    showGrantedAsText = true
+                    granted = backgroundGranted
                 )
 
                 // Микрофон
@@ -204,9 +197,7 @@ fun PermissionsScreenSimple(
                     icon = R.drawable.mic,
                     title = "Доступ к микрофону",
                     subtitle = "Для голосового управления и выбора интересов",
-                    granted = micGranted,
-                    onAction = { micGranted = !micGranted },
-                    showGrantedAsText = true
+                    granted = micGranted
                 )
 
                 // Уведомления
@@ -215,18 +206,14 @@ fun PermissionsScreenSimple(
                         icon = R.drawable.notifications,
                         title = "Уведомления",
                         subtitle = "Разрешение на показ уведомлений для управления воспроизведением",
-                        granted = notifsGranted,
-                        onAction = { notifsGranted = !notifsGranted },
-                        showGrantedAsText = true
+                        granted = notifsGranted
                     )
                 } else {
                     PermissionItem(
                         icon = R.drawable.notifications,
                         title = "Уведомления (demo)",
                         subtitle = "Уведомления доступны на вашей версии",
-                        granted = notifsGranted,
-                        onAction = { notifsGranted = !notifsGranted },
-                        showGrantedAsText = true
+                        granted = notifsGranted
                     )
                 }
 
@@ -264,7 +251,8 @@ fun TopAppBarSimple(title: String) {
 fun PreviewPermissionsScreenDark() {
     MyApplicationTheme(darkTheme = true) {
         PermissionsScreenSimple(
-            initialLocationGranted = true,
+            locationGranted = true,
+            notifsGranted = true,
             onContinue = {}
         )
     }
@@ -280,7 +268,7 @@ fun PreviewPermissionsScreenDark() {
 fun PreviewPermissionsScreenLight() {
     MyApplicationTheme(darkTheme = false) {
         PermissionsScreenSimple(
-            initialLocationGranted = true,
+            locationGranted = true,
             onContinue = {}
         )
     }
