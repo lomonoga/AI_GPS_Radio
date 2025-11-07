@@ -10,6 +10,9 @@ RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY pkg/ ./pkg/
+COPY docs/ ./docs/
+COPY migrations/ ./migrations/
+
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api
 
@@ -20,6 +23,7 @@ RUN apk --no-cache add ca-certificates curl
 WORKDIR /root/
 
 COPY --from=builder /app/main .
+COPY --from=builder /app/migrations ./migrations/
 
 EXPOSE 8080
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"sync"
 )
@@ -24,8 +25,8 @@ func Load() *Config {
 			DBPort:     getEnv("DB_PORT_AIGPSSERVICE", "5432"),
 			DBUser:     getEnv("DB_USER_AIGPSSERVICE", "postgres"),
 			DBPassword: getEnv("DB_PASSWORD_AIGPSSERVICE", "postgres"),
-			DBName:     getEnv("DB_NAME_AIGPSSERVICE", "aigpsservice"),
-			ServerPort: getEnv("SERVER_PORT_AIGPSSERVICE", "8765"),
+			DBName:     getEnv("DB_NAME_AIGPSSERVICE", "postgres"),
+			ServerPort: getEnv("SERVER_PORT_AIGPSSERVICE", "8080"),
 		}
 	})
 	return configInstance
@@ -36,4 +37,14 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func (c *Config) GetDBConnectionString() string {
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable",
+		c.DBHost,
+		c.DBPort,
+		c.DBName,
+		c.DBUser,
+		c.DBPassword,
+	)
 }

@@ -34,6 +34,14 @@ func (h *POIHandler) writeError(w http.ResponseWriter, status int, message strin
 	json.NewEncoder(w).Encode(Response{Error: message})
 }
 
+// FindNearestPOI godoc
+// @Tags POI
+// @Summary Поиск ближайшей точки интереса
+// @Description Возвращает ближайшие точки интереса по координатам
+// @Param latitude query number true "Широта" example(55.7558)
+// @Param longitude query number true "Долгота" example(37.6173)
+// @Success 200 {object} domain.PointOfInterest
+// @Router /api/poi/nearby [get]
 func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -71,6 +79,12 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 	h.writeJSON(w, http.StatusOK, Response{Data: poi})
 }
 
+// HealthCheck godoc
+// @Tags Health
+// @Summary Проверка здоровья сервиса
+// @Description Проверяет доступность сервиса
+// @Success 200 {object} Response "Успешный ответ"
+// @Router /health [get]
 func (h *POIHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
