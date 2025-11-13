@@ -29,8 +29,9 @@ fun VoiceInterestsScreen(
         },
         bottomBar = {
             Surface(
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp
+                tonalElevation = 6.dp,
+                shadowElevation = 6.dp,
+                modifier = Modifier.padding(bottom = 14.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -43,9 +44,12 @@ fun VoiceInterestsScreen(
                         onClick = onSkip,
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
+                            .height(55.dp)
                     ) {
-                        Text("Пропустить")
+                        Text("Пропустить",
+                            modifier = Modifier.fillMaxWidth(), // текст заполнит кнопку
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(10.dp))
@@ -54,9 +58,12 @@ fun VoiceInterestsScreen(
                         onClick = onComplete,
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
+                            .height(55.dp)
                     ) {
-                        Text("Подтвердить ввод")
+                        Text("Подтвердить ввод",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
@@ -139,7 +146,8 @@ fun VoiceInterestsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp),
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
+                    textAlign = TextAlign.Center
                 )
             }
 
