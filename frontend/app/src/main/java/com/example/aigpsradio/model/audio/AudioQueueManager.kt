@@ -40,10 +40,17 @@ class AudioQueueManager {
         return if (index in queueList.indices) queueList[index] else null
     }
 
-    /**
-     * Moves to the next track in queue.
-     * Returns true if there's a next track, false if queue is empty.
-     */
+    fun moveToPrevious(): Boolean {
+        val currentIndex = _currentTrackIndex.value
+        if (currentIndex > 0) {
+            _currentTrackIndex.value = currentIndex - 1
+            Log.d(TAG, "Moved to previous track: index=${currentIndex - 1}")
+            return true
+        }
+        Log.d(TAG, "Already at first track")
+        return false
+    }
+
     fun moveToNext(): Boolean {
         val currentQueue = _queue.value
         if (currentQueue.isEmpty()) {

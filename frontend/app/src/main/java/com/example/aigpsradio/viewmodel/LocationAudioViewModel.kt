@@ -26,8 +26,10 @@ data class LocationAudioUiState(
     val currentPlaceName: String? = null,
     val currentTrackName: String? = null,
     val isPlaying: Boolean = false,
+    val isPaused: Boolean = false,
     val queueSize: Int = 0,
-    val currentTrackIndex: Int = 0
+    val currentTrackIndex: Int = 0,
+    val hasStartedManually: Boolean = false
 )
 
 /**
@@ -48,6 +50,8 @@ class LocationAudioViewModel(
     private var locationCheckJob: Job? = null
     private var currentLocation: Pair<Double, Double>? = null
 
+    private var currentPlaceCoordinates: Pair<Double, Double>? = null
+
     init {
         // Observe queue changes
         viewModelScope.launch {
@@ -66,12 +70,23 @@ class LocationAudioViewModel(
             }
         }
 
-        // Observe current track name
+        // Отслеживание состояния паузы
+        viewModelScope.launch {
+            audioPlaybackManager.isPaused.collect { isPaused ->
+                _uiState.value = _uiState.value.copy(isPaused = isPaused)
+            }
+        }
+
+        // Отслеживание имени текущего трека
         viewModelScope.launch {
             audioPlaybackManager.currentTrackName.collect { trackName ->
                 _uiState.value = _uiState.value.copy(currentTrackName = trackName)
             }
         }
+    }
+
+    fun getCurrentPlaceCoordinates(): Pair<Double, Double>? {
+        return currentPlaceCoordinates
     }
 
     /**
@@ -125,6 +140,12 @@ class LocationAudioViewModel(
 
         repository.getNearestPlace(latitude, longitude)
             .onSuccess { placeResponse ->
+
+                currentPlaceCoordinates = Pair(
+                    placeResponse.latitudeResponse,
+                    placeResponse.longitudeResponse
+                )
+
                 _uiState.value = _uiState.value.copy(
                     isLoadingPlace = false,
                     currentPlaceName = placeResponse.placeName
@@ -139,12 +160,9 @@ class LocationAudioViewModel(
 
                 if (isNewPlace) {
                     Log.d(TAG, "New place detected, transition will happen after current track")
-                    // Current track continues playing, queue is already updated
+                    // Текущий трек продолжает играть, очередь уже обновлена
                 } else {
-                    // Same place or initial - start playback if not playing
-                    if (!audioPlaybackManager.isPlaying.value) {
-                        playNextInQueue()
-                    }
+                    Log.d(TAG, "Same place or initial - waiting for manual start")
                 }
             }
             .onFailure { error ->
@@ -157,7 +175,7 @@ class LocationAudioViewModel(
     }
 
     /**
-     * Plays the next track in the queue.
+     * Воспроизводит следующий трек в очереди
      */
     private fun playNextInQueue() {
         val nextTrack = queueManager.getCurrentTrack()
@@ -166,17 +184,18 @@ class LocationAudioViewModel(
             Log.d(TAG, "No more tracks in queue")
             _uiState.value = _uiState.value.copy(
                 isPlaying = false,
+                isPaused = false,
                 currentTrackName = null
             )
             return
         }
 
-        // Download and play the track
+        // Скачиваем и воспроизводим трек
         downloadAndPlayTrack(nextTrack)
     }
 
     /**
-     * Downloads audio file and starts playback.
+     * Скачивает аудиофайл и запускает воспроизведение
      */
     private fun downloadAndPlayTrack(track: QueuedTrack) {
         viewModelScope.launch {
@@ -188,12 +207,12 @@ class LocationAudioViewModel(
                         .onSuccess { file ->
                             _uiState.value = _uiState.value.copy(isLoadingAudio = false)
 
-                            // Play with completion callback
+                            // Воспроизводим с callback завершения
                             audioPlaybackManager.play(
                                 audioFile = file,
                                 trackName = track.audioFile.audioName,
                                 onComplete = {
-                                    // When track completes, move to next
+                                    // Когда трек завершается, переходим к следующему
                                     onTrackCompleted(file)
                                 }
                             )
@@ -204,7 +223,7 @@ class LocationAudioViewModel(
                                 isLoadingAudio = false,
                                 errorMessage = "Failed to save audio: ${error.localizedMessage}"
                             )
-                            // Try next track on error
+                            // Пробуем следующий трек при ошибке
                             handleTrackError()
                         }
                 }
@@ -214,17 +233,17 @@ class LocationAudioViewModel(
                         isLoadingAudio = false,
                         errorMessage = "Failed to stream audio: ${error.localizedMessage}"
                     )
-                    // Try next track on error
+                    // Пробуем следующий трек при ошибке
                     handleTrackError()
                 }
         }
     }
 
     /**
-     * Called when a track finishes playing successfully.
+     * Вызывается при успешном завершении трека
      */
     private fun onTrackCompleted(audioFile: File) {
-        // Clean up the temporary file
+        // Удаляем временный файл
         try {
             if (audioFile.exists()) {
                 audioFile.delete()
@@ -234,21 +253,22 @@ class LocationAudioViewModel(
             Log.w(TAG, "Failed to delete audio file: ${e.message}")
         }
 
-        // Move to next track
+        // Переходим к следующему треку
         if (queueManager.moveToNext()) {
             playNextInQueue()
         } else {
             Log.d(TAG, "Playlist finished")
             _uiState.value = _uiState.value.copy(
                 isPlaying = false,
+                isPaused = false,
                 currentTrackName = null
             )
         }
     }
 
     /**
-     * Called when there's an error playing/downloading a track.
-     * Skips to next track.
+     * Вызывается при ошибке воспроизведения/загрузки трека
+     * Пропускает к следующему треку
      */
     private fun handleTrackError() {
         if (queueManager.moveToNext()) {
@@ -259,13 +279,37 @@ class LocationAudioViewModel(
     }
 
     /**
-     * Manually stops playback and clears queue.
+     * Ставит воспроизведение на паузу
+     */
+    fun pausePlayback() {
+        audioPlaybackManager.pause()
+        Log.d(TAG, "Playback paused")
+    }
+
+    /**
+     * Возобновляет воспроизведение после паузы
+     */
+    fun resumePlayback() {
+        if (audioPlaybackManager.hasActivePlayer()) {
+            audioPlaybackManager.resume()
+            Log.d(TAG, "Playback resumed")
+        } else {
+            // Если нет активного плеера - запускаем первый трек
+            _uiState.value = _uiState.value.copy(hasStartedManually = true)
+            playNextInQueue()
+            Log.d(TAG, "Playback started manually")
+        }
+    }
+
+    /**
+     * Полностью останавливает воспроизведение и очищает очередь
      */
     fun stopPlayback() {
         audioPlaybackManager.stop()
         queueManager.clear()
         _uiState.value = _uiState.value.copy(
             isPlaying = false,
+            isPaused = false,
             currentTrackName = null,
             queueSize = 0,
             currentTrackIndex = 0
@@ -274,7 +318,17 @@ class LocationAudioViewModel(
     }
 
     /**
-     * Skips to next track manually.
+     * Вручную пропускает к предыдущему треку
+     */
+    fun skipToPrevious() {
+        audioPlaybackManager.stop()
+        if (queueManager.moveToPrevious()) {
+            playNextInQueue()
+        }
+    }
+
+    /**
+     * Вручную пропускает к следующему треку
      */
     fun skipToNext() {
         audioPlaybackManager.stop()

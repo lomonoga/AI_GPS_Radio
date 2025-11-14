@@ -10,10 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aigpsradio.R
+import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 import com.example.aigpsradio.viewmodel.LocationViewModel
 import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -21,20 +23,74 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import org.osmdroid.views.overlay.Marker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(viewModel: LocationViewModel) {
+fun PlayerScreen(
+    locationviewModel: LocationViewModel,
+    locationAudioViewModel: LocationAudioViewModel
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val uiState by locationAudioViewModel.uiState.collectAsState()
+
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var locationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
-    // Слой на карте, который отображает местоположение
+    var hasStartedPlayback by remember { mutableStateOf(false) }
+    var poiMarker by remember { mutableStateOf<Marker?>(null) }
 
     // Автоматический запуск отслеживания при создании экрана
     LaunchedEffect(Unit) {
-        viewModel.startLocationTracking()
+        locationviewModel.startLocationTracking()
         Log.d(TAG, "PlayerScreen created, starting location tracking")
+    }
+
+    LaunchedEffect(locationOverlay) {
+        snapshotFlow { locationOverlay?.myLocation }
+            .collect { location ->
+                location?.let {
+                    val lat = it.latitude
+                    val lon = it.longitude
+
+                    // Обновляем локацию в locationaudioViewModel
+                    locationAudioViewModel.updateLocation(lat, lon)
+
+                    // Запускаем воспроизведение при получении первой локации
+                    if (!hasStartedPlayback) {
+                        locationAudioViewModel.startLocationBasedPlayback(lat, lon)
+                        hasStartedPlayback = true
+                        Log.d(TAG, "Started location-based playback at $lat, $lon")
+                    }
+                }
+            }
+    }
+    // Добавьте LaunchedEffect для отслеживания изменений места
+    LaunchedEffect(uiState.currentPlaceName) {
+        // Получаем координаты текущего места из API
+        val currentPlace = locationAudioViewModel.getCurrentPlaceCoordinates()
+
+        currentPlace?.let { (lat, lon) ->
+            mapView?.let { map ->
+                // Удаляем старый маркер если есть
+                poiMarker?.let { map.overlays.remove(it) }
+
+                // Создаем новый маркер
+                val marker = Marker(map).apply {
+                    position = GeoPoint(lat, lon)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    title = uiState.currentPlaceName ?: "POI"
+                    icon = ContextCompat.getDrawable(
+                        map.context,
+                        R.drawable.ic_place // используйте свою иконку
+                    )
+                }
+
+                map.overlays.add(marker)
+                poiMarker = marker
+                map.invalidate()
+            }
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -69,12 +125,23 @@ fun PlayerScreen(viewModel: LocationViewModel) {
         scaffoldState = scaffoldState,
         sheetPeekHeight = 150.dp,
         sheetContent = {
-            MinioStreamScreen(onPlay = {
-                scope.launch {
-                    // Популярный API: expand(); если в твоей версии нет — используй animateTo(SheetValue.Expanded)
-                    scaffoldState.bottomSheetState.expand()
+            AudioPlayerSheet(
+                uiState = uiState,
+                onPlayPause = {
+                    if (uiState.isPlaying) {
+                        locationAudioViewModel.pausePlayback()
+                    } else {
+                        locationAudioViewModel.resumePlayback()
+                    }
+                },
+                onSkipNext = { locationAudioViewModel.skipToNext() },
+                onSkipPrevious = { locationAudioViewModel.skipToPrevious() },
+                onExpand = {
+                    scope.launch {
+                        scaffoldState.bottomSheetState.expand()
+                    }
                 }
-            })
+            )
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
