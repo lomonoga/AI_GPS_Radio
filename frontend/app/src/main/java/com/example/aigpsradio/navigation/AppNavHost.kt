@@ -18,12 +18,14 @@ import com.example.aigpsradio.ui.PermissionsScreenSimple
 import com.example.aigpsradio.ui.PlayerScreen
 import com.example.aigpsradio.ui.VoiceInterestsScreen
 import com.example.aigpsradio.viewmodel.LocationViewModel
+import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 
 @Composable
 fun AppNavHost(
     navHostController: NavHostController,
     openPlayer: Boolean,
-    locationViewModel: LocationViewModel
+    locationViewModel: LocationViewModel,
+    locationAudioViewModel: LocationAudioViewModel
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
@@ -140,7 +142,10 @@ fun AppNavHost(
         }
 
         composable(route = Destination.Player.route) {
-            PlayerScreen(viewModel = locationViewModel)
+            PlayerScreen(
+                locationviewModel = locationViewModel,
+                locationAudioViewModel = locationAudioViewModel
+            )
         }
     }
 

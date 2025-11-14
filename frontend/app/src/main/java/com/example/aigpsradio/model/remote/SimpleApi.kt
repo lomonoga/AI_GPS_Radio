@@ -11,7 +11,7 @@ import retrofit2.http.Streaming
 interface SimpleApi {
 
     @POST("nearest")
-    suspend fun sendLocation(
+    suspend fun getNearestPlace(
         @Body payload: LocationPayload
     ): Response<NearestPlaceResponse>
 

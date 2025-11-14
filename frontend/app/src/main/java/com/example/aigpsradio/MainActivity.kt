@@ -12,9 +12,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
+import com.example.aigpsradio.di.NetworkModule
+import com.example.aigpsradio.data.repository.Repository
 import com.example.aigpsradio.navigation.AppNavHost
 import com.example.aigpsradio.ui.theme.MyApplicationTheme
+import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 import com.example.aigpsradio.viewmodel.LocationViewModel
+import com.example.aigpsradio.viewmodel.ViewModelFactory
 
 private const val TAG = "MainActivity"
 
@@ -22,6 +26,7 @@ class MainActivity : ComponentActivity() {
 
     private val openPlayer = mutableStateOf(false)
     private var locationViewModel: LocationViewModel? = null
+    private var locationAudioViewModel: LocationAudioViewModel? = null
 
     // Лаунчер для базовых разрешений (геолокация, микрофон, уведомления)
     private val permissionLauncher = registerForActivityResult(
@@ -55,7 +60,13 @@ class MainActivity : ComponentActivity() {
 
         Log.d(TAG, "MainActivity onCreate - SDK version: ${Build.VERSION.SDK_INT}")
 
+        // Создаем Repository и Factory
+        val repository = Repository(NetworkModule.api)
+        val factory = ViewModelFactory(repository, application)
+
+        // Создаем ViewModels с использованием factory
         locationViewModel = ViewModelProvider(this)[LocationViewModel::class.java]
+        locationAudioViewModel = ViewModelProvider(this, factory)[LocationAudioViewModel::class.java]
 
         // Запрос всех необходимых разрешений
         val permissionsToRequest = mutableListOf(
@@ -82,7 +93,8 @@ class MainActivity : ComponentActivity() {
                 AppNavHost(
                     navHostController = navController,
                     openPlayer = openPlayer.value,
-                    locationViewModel = locationViewModel!!
+                    locationViewModel = locationViewModel!!,
+                    locationAudioViewModel = locationAudioViewModel!!
                 )
             }
         }

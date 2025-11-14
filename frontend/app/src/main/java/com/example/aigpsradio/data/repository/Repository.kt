@@ -2,6 +2,8 @@ package com.example.aigpsradio.data.repository
 
 import android.util.Log
 import com.example.aigpsradio.model.remote.AudioRequest
+import com.example.aigpsradio.model.remote.LocationPayload
+import com.example.aigpsradio.model.remote.NearestPlaceResponse
 import com.example.aigpsradio.model.remote.SimpleApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +16,33 @@ private const val TAG = "AudioRepository"
 class Repository(
     private val api: SimpleApi
 ) {
+    /**
+     * Получает информацию о ближайшем месте по координатам.
+     */
+    suspend fun getNearestPlace(
+        latitude: Double,
+        longitude: Double
+    ): Result<NearestPlaceResponse> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getNearestPlace(LocationPayload(latitude, longitude))
+            val body = response.body()
+
+            if (response.isSuccessful && body != null) {
+                Log.d(TAG, "Nearest place request successful, place: ${body.placeName}")
+                Result.success(body)
+            } else {
+                Result.failure(Exception("Server error: ${response.code()}"))
+            }
+
+        } catch (ce: CancellationException) {
+            Log.w(TAG, "getNearestPlace cancelled", ce)
+            throw ce
+        } catch (e: Exception) {
+            Log.e(TAG, "getNearestPlace error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
     /**
      * Запрашивает аудио у сервера асинхронно и возвращает Result с ResponseBody или ошибкой.
      * Важно: ResponseBody нужно закрыть/потребить (например, через saveAudioToCache), чтобы не утекли ресурсы.
