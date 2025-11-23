@@ -1,0 +1,86 @@
+definitions:
+  domain.File:
+    properties:
+      created_at:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      is_short:
+        type: boolean
+      mime_type:
+        type: string
+      s3_key:
+        type: string
+      serial_number:
+        type: integer
+    type: object
+  domain.PointOfInterest:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      full_audio_files:
+        items:
+          $ref: '#/definitions/domain.File'
+        type: array
+      id:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      short_audio_file:
+        $ref: '#/definitions/domain.File'
+    type: object
+  handler.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/poi/nearby:
+    get:
+      description: Возвращает ближайшие точки интереса по координатам
+      parameters:
+      - description: Широта
+        example: 55.7558
+        in: query
+        name: latitude
+        required: true
+        type: number
+      - description: Долгота
+        example: 37.6173
+        in: query
+        name: longitude
+        required: true
+        type: number
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.PointOfInterest'
+      summary: Поиск ближайшей точки интереса
+      tags:
+      - POI
+  /health:
+    get:
+      description: Проверяет доступность сервиса
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            $ref: '#/definitions/handler.Response'
+      summary: Проверка здоровья сервиса
+      tags:
+      - Health
+swagger: "2.0"
