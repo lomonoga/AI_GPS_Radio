@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.aigpsradio.R
 
@@ -22,60 +23,18 @@ fun AudioPlayerSheet(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+            .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Spacer(modifier = Modifier.height(16.dp))
-
         // Название места
         Text(
-            //text = uiState.currentPlaceName ?: "Поиск места...",
             text = "Плотина городского пруда на реке Исеть",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        // Текущий трек
-        Text(
-            text = uiState.currentTrackName ?: "Трек не воспроизводится",
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 2
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Индикатор загрузки
-        if (uiState.isLoadingPlace || uiState.isLoadingAudio) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (uiState.isLoadingPlace) "Определение места..." else "Загрузка аудио...",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // Сообщение об ошибке
-        uiState.errorMessage?.let { error ->
-            Text(
-                text = error,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-        }
 
         val shouldShowStartButton = !uiState.isPlaying &&
                 !uiState.isPaused &&
@@ -161,6 +120,55 @@ fun AudioPlayerSheet(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+
+        // Текущий трек
+        Text(
+            text = uiState.currentTrackName ?: "Трек не воспроизводится",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 2
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Индикатор загрузки
+        if (uiState.isLoadingPlace || uiState.isLoadingAudio) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (uiState.isLoadingPlace) "Определение места..." else "Загрузка аудио...",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        // Сообщение об ошибке
+        uiState.errorMessage?.let { error ->
+            Text(
+                text = error,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Описание места
+        Text(
+            text = uiState.currentPlaceDescription ?: "Поиск места",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.fillMaxWidth(), // <-- занимает всю ширину
+            textAlign = TextAlign.Center
+        )
 
         // Индикатор статуса воспроизведения
         if (uiState.queueSize == 0 && !uiState.isLoadingPlace) {

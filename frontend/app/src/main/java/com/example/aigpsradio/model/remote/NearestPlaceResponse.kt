@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName
 data class NearestPlaceResponse(
     @SerializedName("id") val id: Int,
     @SerializedName("name") val placeName: String,
+    @SerializedName("image") val image: String,
     @SerializedName("description") val description: String,
     @SerializedName("latitude") val latitudeResponse: Double,
     @SerializedName("longitude") val longitudeResponse: Double,

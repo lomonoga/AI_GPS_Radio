@@ -1,9 +1,15 @@
 package com.example.aigpsradio.viewmodel
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
+import com.example.aigpsradio.BuildConfig.BASE_URL
 import com.example.aigpsradio.data.repository.Repository
 import com.example.aigpsradio.model.audio.AudioPlaybackManager
 import com.example.aigpsradio.model.audio.AudioQueueManager
@@ -29,7 +35,9 @@ data class LocationAudioUiState(
     val isPaused: Boolean = false,
     val queueSize: Int = 0,
     val currentTrackIndex: Int = 0,
-    val hasStartedManually: Boolean = false
+    val hasStartedManually: Boolean = false,
+    val placeImageBitmap: Bitmap? = null,
+    val currentPlaceDescription: String? = null
 )
 
 /**
@@ -51,6 +59,7 @@ class LocationAudioViewModel(
     private var currentLocation: Pair<Double, Double>? = null
 
     private var currentPlaceCoordinates: Pair<Double, Double>? = null
+    private var currentPlaceImageName: String? = null
 
     init {
         // Observe queue changes
@@ -141,6 +150,8 @@ class LocationAudioViewModel(
         repository.getNearestPlace(latitude, longitude)
             .onSuccess { placeResponse ->
 
+                currentPlaceImageName = placeResponse.image
+
                 currentPlaceCoordinates = Pair(
                     placeResponse.latitudeResponse,
                     placeResponse.longitudeResponse
@@ -148,8 +159,11 @@ class LocationAudioViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     isLoadingPlace = false,
-                    currentPlaceName = placeResponse.placeName
+                    currentPlaceName = placeResponse.placeName,
+                    currentPlaceDescription = placeResponse.description
                 )
+
+                loadPlaceImage()
 
                 // Handle place change/continuation
                 val isNewPlace = queueManager.handleNewPlace(
@@ -172,6 +186,28 @@ class LocationAudioViewModel(
                     errorMessage = "Failed to get location: ${error.localizedMessage}"
                 )
             }
+    }
+
+    private fun loadPlaceImage() {
+        currentPlaceImageName?.let { imageName ->
+            Glide.with(getApplication<Application>().applicationContext)
+                .asBitmap()
+                .load("$BASE_URL/$imageName")
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        _uiState.value = _uiState.value.copy(placeImageBitmap = resource)
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {
+                        _uiState.value = _uiState.value.copy(placeImageBitmap = null)
+                    }
+
+//                    override fun onLoadFailed(errorDrawable: Drawable?) {
+//                        super.onLoadFailed(errorDrawable)
+//                        _uiState.value = _uiState.value.copy(errorMessage = "Failed to load place image")
+//                    }
+                })
+        }
     }
 
     /**

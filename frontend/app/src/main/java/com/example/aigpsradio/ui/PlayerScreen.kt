@@ -2,11 +2,22 @@ package com.example.aigpsradio.ui
 
 import android.content.ContentValues.TAG
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -124,24 +135,71 @@ fun PlayerScreen(
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 150.dp,
+        sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         sheetContent = {
-            AudioPlayerSheet(
-                uiState = uiState,
-                onPlayPause = {
-                    if (uiState.isPlaying) {
-                        locationAudioViewModel.pausePlayback()
-                    } else {
-                        locationAudioViewModel.resumePlayback()
-                    }
-                },
-                onSkipNext = { locationAudioViewModel.skipToNext() },
-                onSkipPrevious = { locationAudioViewModel.skipToPrevious() },
-                onExpand = {
-                    scope.launch {
-                        scaffoldState.bottomSheetState.expand()
+
+            val configuration = LocalConfiguration.current
+            val sheetHeight = (configuration.screenHeightDp * 0.75f).dp
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(sheetHeight) // задаём максимальную высоту листа — 75% экрана
+            ) {
+
+                val currentState = scaffoldState.bottomSheetState.currentValue
+
+                AnimatedVisibility(
+                    visible = currentState == SheetValue.Expanded,
+                    enter = fadeIn() + expandVertically(
+                        expandFrom = Alignment.Top,
+                        animationSpec = tween(durationMillis = 300)
+                    ),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 200)) +
+                            shrinkVertically(
+                                shrinkTowards = Alignment.Top,
+                                animationSpec = tween(durationMillis = 200)
+                            )
+                ) {
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.plotinka),
+                                contentDescription = "Header image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
-            )
+
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                ) {
+                    AudioPlayerSheet(
+                        uiState = uiState,
+                        onPlayPause = {
+                            if (uiState.isPlaying) {
+                                locationAudioViewModel.pausePlayback()
+                            } else {
+                                locationAudioViewModel.resumePlayback()
+                            }
+                        },
+                        onSkipNext = { locationAudioViewModel.skipToNext() },
+                        onSkipPrevious = { locationAudioViewModel.skipToPrevious() },
+                        onExpand = {
+                            scope.launch { scaffoldState.bottomSheetState.expand() }
+                        }
+                    )
+                }
+            }
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
