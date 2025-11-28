@@ -6,6 +6,7 @@ import (
 	"aigpsservice/internal/repository"
 	"aigpsservice/internal/repository/postgres"
 	"aigpsservice/internal/service"
+	"aigpsservice/pkg/logger"
 	"database/sql"
 	"log"
 	"net/http"
@@ -20,7 +21,7 @@ import (
 // @title AIGPS Service API
 // @version 1.0
 // @description API для сервиса геолокации и точек интереса
-// @host ip:8080
+// @host 45.150.8.131:8080
 // @BasePath /
 func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
@@ -32,6 +33,10 @@ func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 
 	poiService := service.NewPOIService(repos.POI)
 	poiHandler := handler.NewPOIHandler(poiService)
+	s3Proxy, err := handler.NewS3Proxy(cfg)
+	if err != nil {
+		logger.Error.Fatalf("Failed to create S3 proxy: %v", err)
+	}
 
 	// Swagger docs
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)
@@ -41,6 +46,12 @@ func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 
 	// POI endpoints
 	mux.HandleFunc("/api/poi/nearby", poiHandler.FindNearestPOI)
+
+	// S3 proxy
+	mux.HandleFunc("/s3/files/", s3Proxy.ProxyGet)
+	mux.HandleFunc("/s3/upload", s3Proxy.ProxyUpload)
+	mux.HandleFunc("/s3/list", s3Proxy.ListObjects)
+	mux.HandleFunc("/s3/health", s3Proxy.HealthCheck)
 
 	handler := applyMiddleware(mux)
 

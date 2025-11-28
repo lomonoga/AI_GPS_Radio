@@ -66,6 +66,169 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/s3/files/{path}": {
+            "get": {
+                "description": "Скачивает файл из S3 хранилища по указанному пути",
+                "tags": [
+                    "S3"
+                ],
+                "summary": "Получить файл из S3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"images/photo.jpg\"",
+                        "description": "Путь к файлу в S3",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Файл",
+                        "schema": {
+                            "type": "file"
+                        },
+                        "headers": {
+                            "Content-Length": {
+                                "type": "string",
+                                "description": "Размер файла в байтах"
+                            },
+                            "Content-Type": {
+                                "type": "string",
+                                "description": "MIME-тип файла"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Файл не найден",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/s3/health": {
+            "get": {
+                "description": "Проверяет соединение с S3 хранилищем",
+                "tags": [
+                    "S3"
+                ],
+                "summary": "Проверка соединения с S3 хранилищем",
+                "responses": {}
+            }
+        },
+        "/s3/list": {
+            "get": {
+                "description": "Возвращает список файлов в S3 бакете с возможностью фильтрации по префиксу",
+                "tags": [
+                    "S3"
+                ],
+                "summary": "Получить список файлов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"images/\"",
+                        "description": "Префикс для фильтрации файлов",
+                        "name": "prefix",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.S3ListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/s3/upload": {
+            "post": {
+                "description": "Загружает файл в S3 хранилище используя multipart/form-data",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "tags": [
+                    "S3"
+                ],
+                "summary": "Загрузить файл в S3",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Файл для загрузки",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"documents/report.pdf\"",
+                        "description": "Путь для сохранения в S3",
+                        "name": "path",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.S3UploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -130,6 +293,48 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.S3FileInfo": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "last_modified": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.S3ListResponse": {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.S3FileInfo"
+                    }
+                }
+            }
+        },
+        "domain.S3UploadResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.Response": {
             "type": "object",
             "properties": {
@@ -144,12 +349,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "45.150.8.131:8080",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "AIGPS Service API",
+	Description:      "API для сервиса геолокации и точек интереса",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

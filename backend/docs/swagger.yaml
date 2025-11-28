@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   domain.File:
     properties:
@@ -39,14 +40,45 @@ definitions:
       short_audio_file:
         $ref: '#/definitions/domain.File'
     type: object
+  domain.S3FileInfo:
+    properties:
+      content_type:
+        type: string
+      last_modified:
+        type: string
+      name:
+        type: string
+      size:
+        type: integer
+    type: object
+  domain.S3ListResponse:
+    properties:
+      files:
+        items:
+          $ref: '#/definitions/domain.S3FileInfo'
+        type: array
+    type: object
+  domain.S3UploadResponse:
+    properties:
+      message:
+        type: string
+      path:
+        type: string
+      status:
+        type: string
+    type: object
   handler.Response:
     properties:
       data: {}
       error:
         type: string
     type: object
+host: 45.150.8.131:8080
 info:
   contact: {}
+  description: API для сервиса геолокации и точек интереса
+  title: AIGPS Service API
+  version: "1.0"
 paths:
   /api/poi/nearby:
     get:
@@ -83,4 +115,114 @@ paths:
       summary: Проверка здоровья сервиса
       tags:
       - Health
+  /s3/files/{path}:
+    get:
+      description: Скачивает файл из S3 хранилища по указанному пути
+      parameters:
+      - description: Путь к файлу в S3
+        example: '"images/photo.jpg"'
+        in: path
+        name: path
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Файл
+          headers:
+            Content-Length:
+              description: Размер файла в байтах
+              type: string
+            Content-Type:
+              description: MIME-тип файла
+              type: string
+          schema:
+            type: file
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Файл не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить файл из S3
+      tags:
+      - S3
+  /s3/health:
+    get:
+      description: Проверяет соединение с S3 хранилищем
+      responses: {}
+      summary: Проверка соединения с S3 хранилищем
+      tags:
+      - S3
+  /s3/list:
+    get:
+      description: Возвращает список файлов в S3 бакете с возможностью фильтрации
+        по префиксу
+      parameters:
+      - description: Префикс для фильтрации файлов
+        example: '"images/"'
+        in: query
+        name: prefix
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.S3ListResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список файлов
+      tags:
+      - S3
+  /s3/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает файл в S3 хранилище используя multipart/form-data
+      parameters:
+      - description: Файл для загрузки
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Путь для сохранения в S3
+        example: '"documents/report.pdf"'
+        in: formData
+        name: path
+        type: string
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.S3UploadResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Загрузить файл в S3
+      tags:
+      - S3
 swagger: "2.0"
