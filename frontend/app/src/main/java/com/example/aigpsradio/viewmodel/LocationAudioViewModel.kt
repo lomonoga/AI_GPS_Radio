@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 private const val TAG = "LocationAudioViewModel"
-private const val LOCATION_CHECK_INTERVAL = 30_000L // 30 sec
+private const val LOCATION_CHECK_INTERVAL = 5_000L // 5 sec
 
 data class LocationAudioUiState(
     val isLoadingPlace: Boolean = false,
@@ -192,7 +192,7 @@ class LocationAudioViewModel(
         currentPlaceImageName?.let { imageName ->
             Glide.with(getApplication<Application>().applicationContext)
                 .asBitmap()
-                .load("$BASE_URL/$imageName")
+                .load("${BASE_URL}image/${imageName}")
                 .into(object : CustomTarget<Bitmap>() {
                     override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         _uiState.value = _uiState.value.copy(placeImageBitmap = resource)
@@ -202,10 +202,10 @@ class LocationAudioViewModel(
                         _uiState.value = _uiState.value.copy(placeImageBitmap = null)
                     }
 
-//                    override fun onLoadFailed(errorDrawable: Drawable?) {
-//                        super.onLoadFailed(errorDrawable)
-//                        _uiState.value = _uiState.value.copy(errorMessage = "Failed to load place image")
-//                    }
+                    override fun onLoadFailed(errorDrawable: Drawable?) {
+                        super.onLoadFailed(errorDrawable)
+                        _uiState.value = _uiState.value.copy(errorMessage = "Не удалось загрузить изображение")
+                    }
                 })
         }
     }

@@ -11,15 +11,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.aigpsradio.R
+import com.example.aigpsradio.viewmodel.LocationAudioUiState
 
 
 @Composable
 fun AudioPlayerSheet(
-    uiState: com.example.aigpsradio.viewmodel.LocationAudioUiState,
+    uiState: LocationAudioUiState,
     onPlayPause: () -> Unit,
     onSkipNext: () -> Unit,
-    onSkipPrevious: () -> Unit,
-    onExpand: () -> Unit
+    onSkipPrevious: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -29,7 +29,7 @@ fun AudioPlayerSheet(
 
         // Название места
         Text(
-            text = "Плотина городского пруда на реке Исеть",
+            text = uiState.currentPlaceName ?: "Загрузка места",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -164,7 +164,7 @@ fun AudioPlayerSheet(
 
         // Описание места
         Text(
-            text = uiState.currentPlaceDescription ?: "Поиск места",
+            text = uiState.currentPlaceDescription ?: "Загрузка описания",
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.fillMaxWidth(), // <-- занимает всю ширину
             textAlign = TextAlign.Center

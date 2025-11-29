@@ -8,7 +8,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -16,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -28,7 +26,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aigpsradio.R
 import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 import com.example.aigpsradio.viewmodel.LocationViewModel
-import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -168,11 +165,8 @@ fun PlayerScreen(
                                 .height(200.dp)
                                 .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.plotinka),
-                                contentDescription = "Header image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                            PlaceImage(
+                                viewModel = locationAudioViewModel
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -193,10 +187,7 @@ fun PlayerScreen(
                             }
                         },
                         onSkipNext = { locationAudioViewModel.skipToNext() },
-                        onSkipPrevious = { locationAudioViewModel.skipToPrevious() },
-                        onExpand = {
-                            scope.launch { scaffoldState.bottomSheetState.expand() }
-                        }
+                        onSkipPrevious = { locationAudioViewModel.skipToPrevious() }
                     )
                 }
             }
