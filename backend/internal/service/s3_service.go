@@ -29,6 +29,7 @@ type FileStorage interface {
 
 func NewS3FileStorage(conf config.Config) (*S3FileStorage, error) {
 	awsConfig := &aws.Config{
+		Region:           aws.String("us-east-1"),
 		Credentials:      credentials.NewStaticCredentials(conf.S3AccessKey, conf.S3SecretKey, ""),
 		S3ForcePathStyle: aws.Bool(true),
 	}

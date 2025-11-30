@@ -53,7 +53,7 @@ func (h *POIHandler) writeError(w http.ResponseWriter, status int, message strin
 // @Success 201 {object} domain.PointOfInterest
 // @Failure 400 {object} Response
 // @Failure 500 {object} Response
-// @Router /api/poi [post]
+// @Router /api/poi/create [post]
 func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		h.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")

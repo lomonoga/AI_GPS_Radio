@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/poi": {
+        "/api/poi/create": {
             "post": {
                 "description": "Создает новую точку интереса с изображением и аудиофайлами",
                 "consumes": [

@@ -82,7 +82,7 @@ info:
   title: AIGPS Service API
   version: "1.0"
 paths:
-  /api/poi:
+  /api/poi/create:
     post:
       consumes:
       - multipart/form-data

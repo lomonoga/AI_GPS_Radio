@@ -111,7 +111,7 @@ func (s *POIService) validatePOI(poi *domain.PointOfInterest) error {
 	return nil
 }
 
-func (s *POIService) uploadImage(ctx context.Context, file multipart.File, fileData *domain.File) (string, error) {
+func (s *POIService) uploadImage(_ context.Context, file multipart.File, fileData *domain.File) (string, error) {
 	if fileData.FileSize > s.maxImageSize {
 		return "", fmt.Errorf("image size %d exceeds maximum allowed %d", fileData.FileSize, s.maxImageSize)
 	}
@@ -128,7 +128,7 @@ func (s *POIService) uploadImage(ctx context.Context, file multipart.File, fileD
 	return s3Key, nil
 }
 
-func (s *POIService) uploadAudio(ctx context.Context, file multipart.File, fileData *domain.File) (string, error) {
+func (s *POIService) uploadAudio(_ context.Context, file multipart.File, fileData *domain.File) (string, error) {
 	if fileData.FileSize > s.maxAudioSize {
 		return "", fmt.Errorf("audio size %d exceeds maximum allowed %d", fileData.FileSize, s.maxAudioSize)
 	}

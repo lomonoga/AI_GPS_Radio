@@ -9,7 +9,7 @@
     "host": "45.150.8.131:8080",
     "basePath": "/",
     "paths": {
-        "/api/poi": {
+        "/api/poi/create": {
             "post": {
                 "description": "Создает новую точку интереса с изображением и аудиофайлами",
                 "consumes": [
