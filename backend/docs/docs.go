@@ -15,6 +15,93 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/poi": {
+            "post": {
+                "description": "Создает новую точку интереса с изображением и аудиофайлами",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "tags": [
+                    "POI"
+                ],
+                "summary": "Создание новой точки интереса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Название точки интереса",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Описание точки интереса",
+                        "name": "description",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Широта",
+                        "name": "latitude",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Долгота",
+                        "name": "longitude",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Изображение точки интереса",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Короткое аудио",
+                        "name": "short_audio",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "file"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Полные аудио файлы",
+                        "name": "full_audio",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PointOfInterest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/poi/nearby": {
             "get": {
                 "description": "Возвращает ближайшие точки интереса по координатам",
@@ -38,6 +125,14 @@ const docTemplate = `{
                         "name": "longitude",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "number",
+                        "default": 150,
+                        "example": 100,
+                        "description": "Радиус в метрах",
+                        "name": "radius",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -278,6 +373,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "image_file": {
+                    "$ref": "#/definitions/domain.File"
                 },
                 "latitude": {
                     "type": "number"

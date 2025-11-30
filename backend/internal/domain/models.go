@@ -19,13 +19,14 @@ type PointOfInterest struct {
 	Description    string    `json:"description,omitempty"`
 	Latitude       float64   `json:"latitude"`
 	Longitude      float64   `json:"longitude"`
-	FullAudioFiles []File    `json:"full_audio_files,omitempty"`
+	ImageFile      *File     `json:"image_file,omitempty"`
+	FullAudioFiles []*File   `json:"full_audio_files,omitempty"`
 	ShortAudioFile *File     `json:"short_audio_file,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 
 type POIRepository interface {
-	FindNearestPOI(latitude, longitude float64) (*PointOfInterest, error)
+	FindNearestPOI(latitude, longitude float64, radius int) (*PointOfInterest, error)
 }
 
 type S3FileInfo struct {

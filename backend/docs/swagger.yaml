@@ -31,6 +31,8 @@ definitions:
         type: array
       id:
         type: integer
+      image_file:
+        $ref: '#/definitions/domain.File'
       latitude:
         type: number
       longitude:
@@ -80,6 +82,66 @@ info:
   title: AIGPS Service API
   version: "1.0"
 paths:
+  /api/poi:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Создает новую точку интереса с изображением и аудиофайлами
+      parameters:
+      - description: Название точки интереса
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Описание точки интереса
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Широта
+        in: formData
+        name: latitude
+        required: true
+        type: number
+      - description: Долгота
+        in: formData
+        name: longitude
+        required: true
+        type: number
+      - description: Изображение точки интереса
+        in: formData
+        name: image
+        required: true
+        type: file
+      - description: Короткое аудио
+        in: formData
+        name: short_audio
+        required: true
+        type: file
+      - collectionFormat: csv
+        description: Полные аудио файлы
+        in: formData
+        items:
+          type: file
+        name: full_audio
+        required: true
+        type: array
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.PointOfInterest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.Response'
+      summary: Создание новой точки интереса
+      tags:
+      - POI
   /api/poi/nearby:
     get:
       description: Возвращает ближайшие точки интереса по координатам
@@ -95,6 +157,12 @@ paths:
         in: query
         name: longitude
         required: true
+        type: number
+      - default: 150
+        description: Радиус в метрах
+        example: 100
+        in: query
+        name: radius
         type: number
       responses:
         "200":

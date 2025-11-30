@@ -4,7 +4,6 @@ import (
 	"aigpsservice/internal/config"
 	"aigpsservice/internal/handler"
 	"aigpsservice/internal/repository"
-	"aigpsservice/internal/repository/postgres"
 	"aigpsservice/internal/service"
 	"aigpsservice/pkg/logger"
 	"database/sql"
@@ -26,12 +25,13 @@ import (
 func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 
-	poiRepo := postgres.NewPOIRepository(db)
-	repos := &repository.Repositories{
-		POI: poiRepo,
+	poiRepo := repository.NewPOIRepository(db)
+	fileStorage, err := service.NewS3FileStorage(*cfg)
+	if err != nil {
+		logger.Error.Fatalln("Error init s3 file Storage")
 	}
 
-	poiService := service.NewPOIService(repos.POI)
+	poiService := service.NewPOIService(poiRepo, fileStorage)
 	poiHandler := handler.NewPOIHandler(poiService)
 	s3Proxy, err := handler.NewS3Proxy(cfg)
 	if err != nil {
@@ -46,6 +46,7 @@ func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 
 	// POI endpoints
 	mux.HandleFunc("/api/poi/nearby", poiHandler.FindNearestPOI)
+	mux.HandleFunc("/api/poi/create", poiHandler.CreatePOI)
 
 	// S3 proxy
 	mux.HandleFunc("/s3/files/", s3Proxy.ProxyGet)
