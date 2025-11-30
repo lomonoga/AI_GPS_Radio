@@ -50,7 +50,7 @@ func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 
 	// S3 proxy
 	mux.HandleFunc("/s3/files/", s3Proxy.ProxyGet)
-	mux.HandleFunc("/s3/upload", s3Proxy.ProxyUpload)
+	// mux.HandleFunc("/s3/upload", s3Proxy.ProxyUpload)
 	mux.HandleFunc("/s3/list", s3Proxy.ListObjects)
 	mux.HandleFunc("/s3/health", s3Proxy.HealthCheck)
 

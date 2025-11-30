@@ -65,12 +65,9 @@ func NewS3Proxy(cfg *config.Config) (*S3Proxy, error) {
 // @Success 200 {file} byte "Файл"
 // @Header 200 {string} Content-Type "MIME-тип файла"
 // @Header 200 {string} Content-Length "Размер файла в байтах"
-// @Failure 400 {object} map[string]string "Неверный запрос"
-// @Failure 404 {object} map[string]string "Файл не найден"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
 // @Router /s3/files/{path} [get]
 func (p *S3Proxy) ProxyGet(w http.ResponseWriter, r *http.Request) {
-	objectPath := strings.TrimPrefix(r.URL.Path, "/files/")
+	objectPath := strings.TrimPrefix(r.URL.Path, "s3/files/")
 	if objectPath == "" {
 		http.Error(w, "File path is required", http.StatusBadRequest)
 		return
@@ -113,79 +110,79 @@ func (p *S3Proxy) ProxyGet(w http.ResponseWriter, r *http.Request) {
 	logger.Info.Printf("File served successfully: %s (%d bytes)", objectPath, objInfo.Size)
 }
 
-// UploadFile godoc
-// @Tags S3
-// @Summary Загрузить файл в S3
-// @Description Загружает файл в S3 хранилище используя multipart/form-data
-// @Accept multipart/form-data
-// @Param file formData file true "Файл для загрузки"
-// @Param path formData string false "Путь для сохранения в S3" example("documents/report.pdf")
-// @Success 201 {object} domain.S3UploadResponse
-// @Failure 400 {object} map[string]string "Неверный запрос"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
-// @Router /s3/upload [post]
-func (p *S3Proxy) ProxyUpload(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost && r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+// // UploadFile godoc
+// // @Tags S3
+// // @Summary Загрузить файл в S3
+// // @Description Загружает файл в S3 хранилище используя multipart/form-data
+// // @Accept multipart/form-data
+// // @Param file formData file true "Файл для загрузки"
+// // @Param path formData string false "Путь для сохранения в S3" example("documents/report.pdf")
+// // @Success 201 {object} domain.S3UploadResponse
+// // @Failure 400 {object} map[string]string "Неверный запрос"
+// // @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// // @Router /s3/upload [post]
+// func (p *S3Proxy) ProxyUpload(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodPost && r.Method != http.MethodPut {
+// 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+// 		return
+// 	}
 
-	r.ParseMultipartForm(100 << 20)
+// 	r.ParseMultipartForm(100 << 20)
 
-	var reader io.Reader
-	var objectPath string
-	var contentType string
-	var fileSize int64
+// 	var reader io.Reader
+// 	var objectPath string
+// 	var contentType string
+// 	var fileSize int64
 
-	if r.Method == http.MethodPost {
-		file, header, err := r.FormFile("file")
-		if err != nil {
-			http.Error(w, "No file provided", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
+// 	if r.Method == http.MethodPost {
+// 		file, header, err := r.FormFile("file")
+// 		if err != nil {
+// 			http.Error(w, "No file provided", http.StatusBadRequest)
+// 			return
+// 		}
+// 		defer file.Close()
 
-		reader = file
-		objectPath = r.FormValue("path")
-		if objectPath == "" {
-			objectPath = header.Filename
-		}
-		contentType = header.Header.Get("Content-Type")
-		fileSize = header.Size
-	} else {
-		reader = r.Body
-		defer r.Body.Close()
+// 		reader = file
+// 		objectPath = r.FormValue("path")
+// 		if objectPath == "" {
+// 			objectPath = header.Filename
+// 		}
+// 		contentType = header.Header.Get("Content-Type")
+// 		fileSize = header.Size
+// 	} else {
+// 		reader = r.Body
+// 		defer r.Body.Close()
 
-		objectPath = r.URL.Query().Get("filename")
-		if objectPath == "" {
-			objectPath = fmt.Sprintf("upload_%d", time.Now().Unix())
-		}
-		contentType = r.Header.Get("Content-Type")
-		fileSize = r.ContentLength
-	}
+// 		objectPath = r.URL.Query().Get("filename")
+// 		if objectPath == "" {
+// 			objectPath = fmt.Sprintf("upload_%d", time.Now().Unix())
+// 		}
+// 		contentType = r.Header.Get("Content-Type")
+// 		fileSize = r.ContentLength
+// 	}
 
-	if objectPath == "" {
-		http.Error(w, "Filename is required", http.StatusBadRequest)
-		return
-	}
+// 	if objectPath == "" {
+// 		http.Error(w, "Filename is required", http.StatusBadRequest)
+// 		return
+// 	}
 
-	logger.Info.Printf("Uploading file: %s (%d bytes)", objectPath, fileSize)
+// 	logger.Info.Printf("Uploading file: %s (%d bytes)", objectPath, fileSize)
 
-	ctx := context.Background()
-	_, err := p.client.PutObject(ctx, p.bucket, objectPath, reader, fileSize, minio.PutObjectOptions{
-		ContentType: contentType,
-	})
-	if err != nil {
-		logger.Error.Printf("Error uploading object: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to upload file: %v", err), http.StatusInternalServerError)
-		return
-	}
+// 	ctx := context.Background()
+// 	_, err := p.client.PutObject(ctx, p.bucket, objectPath, reader, fileSize, minio.PutObjectOptions{
+// 		ContentType: contentType,
+// 	})
+// 	if err != nil {
+// 		logger.Error.Printf("Error uploading object: %v", err)
+// 		http.Error(w, fmt.Sprintf("Failed to upload file: %v", err), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, `{"status": "success", "message": "File uploaded successfully", "path": "%s"}`, objectPath)
-	logger.Info.Printf("File uploaded successfully: %s", objectPath)
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusCreated)
+// 	fmt.Fprintf(w, `{"status": "success", "message": "File uploaded successfully", "path": "%s"}`, objectPath)
+// 	logger.Info.Printf("File uploaded successfully: %s", objectPath)
+// }
 
 // ListFiles godoc
 // @Tags S3
@@ -193,7 +190,6 @@ func (p *S3Proxy) ProxyUpload(w http.ResponseWriter, r *http.Request) {
 // @Description Возвращает список файлов в S3 бакете с возможностью фильтрации по префиксу
 // @Param prefix query string false "Префикс для фильтрации файлов" example("images/")
 // @Success 200 {object} domain.S3ListResponse
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
 // @Router /s3/list [get]
 func (p *S3Proxy) ListObjects(w http.ResponseWriter, r *http.Request) {
 	prefix := r.URL.Query().Get("prefix")
