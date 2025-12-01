@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -67,15 +68,32 @@ func NewS3Proxy(cfg *config.Config) (*S3Proxy, error) {
 // @Header 200 {string} Content-Length "Размер файла в байтах"
 // @Router /s3/files/{path} [get]
 func (p *S3Proxy) ProxyGet(w http.ResponseWriter, r *http.Request) {
-	objectPath := strings.TrimPrefix(r.URL.Path, "s3/files/")
+	// Исправляем путь - убираем "/s3/files/"
+	objectPath := strings.TrimPrefix(r.URL.Path, "/s3/files/")
 	if objectPath == "" {
 		http.Error(w, "File path is required", http.StatusBadRequest)
 		return
 	}
 
-	logger.Info.Printf("Getting file: %s", objectPath)
+	decodedPath, err := url.PathUnescape(objectPath)
+	if err == nil {
+		objectPath = decodedPath
+	}
+
+	logger.Info.Printf("=== S3 PROXY DEBUG ===")
+	logger.Info.Printf("Request path: %s", r.URL.Path)
+	logger.Info.Printf("Object path: %s", objectPath)
+	logger.Info.Printf("Bucket: %s", p.bucket)
 
 	ctx := context.Background()
+
+	_, err = p.client.StatObject(ctx, p.bucket, objectPath, minio.StatObjectOptions{})
+	if err != nil {
+		logger.Error.Printf("File not found in S3: %s/%s, error: %v", p.bucket, objectPath, err)
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
 	object, err := p.client.GetObject(ctx, p.bucket, objectPath, minio.GetObjectOptions{})
 	if err != nil {
 		logger.Error.Printf("Error getting object: %v", err)
@@ -91,10 +109,13 @@ func (p *S3Proxy) ProxyGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Info.Printf("File found: %s, size: %d bytes", objectPath, objInfo.Size)
+
 	w.Header().Set("Content-Type", getContentType(objectPath))
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", objInfo.Size))
 	w.Header().Set("Last-Modified", objInfo.LastModified.Format(time.RFC1123))
 	w.Header().Set("ETag", objInfo.ETag)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(objectPath)))
 
 	if isStaticFile(objectPath) {
 		w.Header().Set("Cache-Control", "public, max-age=3600")
