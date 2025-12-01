@@ -189,33 +189,6 @@
                                 "description": "MIME-тип файла"
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Неверный запрос",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Файл не найден",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
                     }
                 }
             }
@@ -251,69 +224,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/domain.S3ListResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/s3/upload": {
-            "post": {
-                "description": "Загружает файл в S3 хранилище используя multipart/form-data",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "tags": [
-                    "S3"
-                ],
-                "summary": "Загрузить файл в S3",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "Файл для загрузки",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"documents/report.pdf\"",
-                        "description": "Путь для сохранения в S3",
-                        "name": "path",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/domain.S3UploadResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Неверный запрос",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
                         }
                     }
                 }
@@ -410,20 +320,6 @@
                     "items": {
                         "$ref": "#/definitions/domain.S3FileInfo"
                     }
-                }
-            }
-        },
-        "domain.S3UploadResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
                 }
             }
         },
