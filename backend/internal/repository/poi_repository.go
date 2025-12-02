@@ -122,9 +122,11 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
 				CreatedAt:    fileCreatedAt.Time,
 			}
 
-			if file.IsShort {
+			if file.SerialNumber == 0 { // If it is image
+				poi.ImageFile = &file
+			} else if file.IsShort { // If it is short audio
 				poi.ShortAudioFile = &file
-			} else {
+			} else { // If it is full audio
 				poi.FullAudioFiles = append(poi.FullAudioFiles, &file)
 			}
 		}
