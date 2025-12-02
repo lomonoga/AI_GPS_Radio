@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -127,7 +126,6 @@ fun PlayerScreen(
             skipHiddenState = true
         )
     )
-    val scope = rememberCoroutineScope()
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -162,20 +160,25 @@ fun PlayerScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            PlaceImage(
-                                viewModel = locationAudioViewModel
-                            )
+                            PlaceImage( viewModel = locationAudioViewModel)
+//                            Image(
+//                                painter = painterResource(id = R.drawable.plotinka),
+//                                contentDescription = "My Location",
+//                                modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+//                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 ) {
                     AudioPlayerSheet(
                         uiState = uiState,
@@ -228,8 +231,8 @@ fun PlayerScreen(
                     }
                 },
                 modifier = Modifier
-                    .align(Alignment.BottomEnd) // правый нижний угол
-                    .padding(end = 20.dp, bottom = 180.dp) // отступы от краёв
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 180.dp)
                     .size(56.dp)
             ) {
                 Icon(

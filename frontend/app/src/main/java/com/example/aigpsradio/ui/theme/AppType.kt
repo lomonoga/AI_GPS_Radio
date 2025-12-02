@@ -5,7 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Typography = Typography(
+val AppTypography = Typography(
     titleLarge = TextStyle(
         fontFamily = Nunito,
         fontWeight = FontWeight.Bold,
@@ -15,7 +15,7 @@ val Typography = Typography(
     titleMedium = TextStyle(
         fontFamily = Nunito,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
+        fontSize = 18.sp,
         lineHeight = 24.sp
     ),
     bodyLarge = TextStyle(

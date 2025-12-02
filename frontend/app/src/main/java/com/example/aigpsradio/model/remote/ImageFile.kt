@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 // Response Models
 
-data class AudioFile(
+data class ImageFile(
     @SerializedName("id") val id: Int,
     @SerializedName("s3_key") val s3Key: String,
     @SerializedName("file_name") val audioName: String,

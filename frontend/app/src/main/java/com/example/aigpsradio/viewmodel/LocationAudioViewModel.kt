@@ -150,7 +150,7 @@ class LocationAudioViewModel(
         repository.getNearestPlace(latitude, longitude)
             .onSuccess { placeResponse ->
 
-                currentPlaceImageName = placeResponse.image
+                currentPlaceImageName = placeResponse.imageFile.s3Key
 
                 currentPlaceCoordinates = Pair(
                     placeResponse.latitudeResponse,
@@ -192,7 +192,7 @@ class LocationAudioViewModel(
         currentPlaceImageName?.let { imageName ->
             Glide.with(getApplication<Application>().applicationContext)
                 .asBitmap()
-                .load("${BASE_URL}image/${imageName}")
+                .load("${BASE_URL}/s3/files/${imageName}")
                 .into(object : CustomTarget<Bitmap>() {
                     override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         _uiState.value = _uiState.value.copy(placeImageBitmap = resource)
@@ -237,7 +237,7 @@ class LocationAudioViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingAudio = true, errorMessage = null)
 
-            repository.streamAudio(track.audioFile.audioName)
+            repository.streamAudio(track.audioFile.s3Key)
                 .onSuccess { responseBody ->
                     repository.saveAudioToCache(responseBody, getApplication<Application>().cacheDir)
                         .onSuccess { file ->

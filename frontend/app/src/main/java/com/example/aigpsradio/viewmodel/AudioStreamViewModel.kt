@@ -26,7 +26,7 @@ class AudioStreamViewModel(
     val uiState: StateFlow<AudioStreamUiState> = _uiState.asStateFlow()
 
 
-    fun loadAudio(audioName: String, context: Context) {
+    fun loadAudio(s3key: String, context: Context) {
         // Передача Context в метод ViewModel — антипаттерн
         // если пользователь вызвал loadAudio несколько раз, предыдущая корутина продолжит выполняться - плохо
 
@@ -35,7 +35,7 @@ class AudioStreamViewModel(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             // Получаем аудио с сервера
-            repository.streamAudio(audioName).onSuccess { responseBody ->
+            repository.streamAudio(s3key).onSuccess { responseBody ->
                 // Сохраняем в кеш
                 repository.saveAudioToCache(responseBody, context.cacheDir)
                     .onSuccess { file ->

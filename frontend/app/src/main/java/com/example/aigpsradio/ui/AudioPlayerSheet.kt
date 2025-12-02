@@ -31,7 +31,7 @@ fun AudioPlayerSheet(
         Text(
             text = uiState.currentPlaceName ?: "Загрузка места",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -47,7 +47,10 @@ fun AudioPlayerSheet(
                 onClick = onPlayPause,
                 modifier = Modifier.fillMaxWidth(0.7f)
             ) {
-                Text("Начать воспроизведение")
+                Text(
+                    text ="Начать воспроизведение",
+                    style = MaterialTheme.typography.bodyMedium
+                    )
             }
         } else {
             // Показываем кнопки плеера только когда воспроизведение началось
@@ -166,7 +169,6 @@ fun AudioPlayerSheet(
         Text(
             text = uiState.currentPlaceDescription ?: "Загрузка описания",
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth(), // <-- занимает всю ширину
             textAlign = TextAlign.Center
         )
 
