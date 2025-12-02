@@ -40,10 +40,14 @@ data class LocationAudioUiState(
     val currentPlaceDescription: String? = null
 )
 
-/**
- * ViewModel that coordinates location tracking, place detection,
- * audio queue management, and playback.
- */
+// NEW: Store pending place UI data
+data class PendingPlaceData(
+    val placeName: String,
+    val description: String,
+    val imageName: String,
+    val coordinates: Pair<Double, Double>
+)
+
 class LocationAudioViewModel(
     application: Application,
     private val repository: Repository
@@ -60,6 +64,9 @@ class LocationAudioViewModel(
 
     private var currentPlaceCoordinates: Pair<Double, Double>? = null
     private var currentPlaceImageName: String? = null
+
+    // NEW: Store pending place data that will be applied after track transition
+    private var pendingPlaceData: PendingPlaceData? = null
 
     init {
         // Observe queue changes
@@ -149,23 +156,16 @@ class LocationAudioViewModel(
 
         repository.getNearestPlace(latitude, longitude)
             .onSuccess { placeResponse ->
-
-                currentPlaceImageName = placeResponse.imageFile.s3Key
-
-                currentPlaceCoordinates = Pair(
-                    placeResponse.latitudeResponse,
-                    placeResponse.longitudeResponse
+                val newPlaceData = PendingPlaceData(
+                    placeName = placeResponse.placeName,
+                    description = placeResponse.description,
+                    imageName = placeResponse.imageFile.s3Key,
+                    coordinates = Pair(placeResponse.latitudeResponse, placeResponse.longitudeResponse)
                 )
 
-                _uiState.value = _uiState.value.copy(
-                    isLoadingPlace = false,
-                    currentPlaceName = placeResponse.placeName,
-                    currentPlaceDescription = placeResponse.description
-                )
+                _uiState.value = _uiState.value.copy(isLoadingPlace = false)
 
-                loadPlaceImage()
-
-                // Handle place change/continuation
+                // Handle place change in queue manager
                 val isNewPlace = queueManager.handleNewPlace(
                     newPlaceId = placeResponse.id,
                     newPlaceName = placeResponse.placeName,
@@ -173,10 +173,13 @@ class LocationAudioViewModel(
                 )
 
                 if (isNewPlace) {
-                    Log.d(TAG, "New place detected, transition will happen after current track")
-                    // Текущий трек продолжает играть, очередь уже обновлена
+                    // NEW PLACE: Store the data but don't apply it yet
+                    Log.d(TAG, "New place detected, UI will update after current track finishes")
+                    pendingPlaceData = newPlaceData
                 } else {
-                    Log.d(TAG, "Same place or initial - waiting for manual start")
+                    // SAME PLACE or INITIAL: Apply immediately
+                    Log.d(TAG, "Same place or initial - updating UI immediately")
+                    applyPlaceData(newPlaceData)
                 }
             }
             .onFailure { error ->
@@ -186,6 +189,19 @@ class LocationAudioViewModel(
                     errorMessage = "Failed to get location: ${error.localizedMessage}"
                 )
             }
+    }
+
+    // NEW: Apply place data to UI
+    private fun applyPlaceData(placeData: PendingPlaceData) {
+        currentPlaceCoordinates = placeData.coordinates
+        currentPlaceImageName = placeData.imageName
+
+        _uiState.value = _uiState.value.copy(
+            currentPlaceName = placeData.placeName,
+            currentPlaceDescription = placeData.description
+        )
+
+        loadPlaceImage()
     }
 
     private fun loadPlaceImage() {
@@ -289,8 +305,18 @@ class LocationAudioViewModel(
             Log.w(TAG, "Failed to delete audio file: ${e.message}")
         }
 
-        // Переходим к следующему треку
-        if (queueManager.moveToNext()) {
+        // NEW: Apply pending place data BEFORE moving to next track
+        val pending = pendingPlaceData
+        if (pending != null) {
+            Log.d(TAG, "Applying pending place data before next track")
+            applyPlaceData(pending)
+            pendingPlaceData = null
+        }
+
+        // Now move to next track
+        val hasMoreTracks = queueManager.moveToNext()
+
+        if (hasMoreTracks) {
             playNextInQueue()
         } else {
             Log.d(TAG, "Playlist finished")
@@ -343,6 +369,7 @@ class LocationAudioViewModel(
     fun stopPlayback() {
         audioPlaybackManager.stop()
         queueManager.clear()
+        pendingPlaceData = null // NEW: Clear pending data
         _uiState.value = _uiState.value.copy(
             isPlaying = false,
             isPaused = false,
@@ -368,6 +395,15 @@ class LocationAudioViewModel(
      */
     fun skipToNext() {
         audioPlaybackManager.stop()
+
+        // NEW: Apply pending place data before moving to next
+        val pending = pendingPlaceData
+        if (pending != null) {
+            Log.d(TAG, "Applying pending place data before manual skip")
+            applyPlaceData(pending)
+            pendingPlaceData = null
+        }
+
         if (queueManager.moveToNext()) {
             playNextInQueue()
         }
