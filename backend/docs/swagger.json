@@ -96,6 +96,33 @@
                 }
             }
         },
+        "/api/poi/delete": {
+            "delete": {
+                "description": "Удаляет точку интереса со всеми связанными файлами",
+                "tags": [
+                    "POI"
+                ],
+                "summary": "Удаление точки интереса по id",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "example": 55.7558,
+                        "description": "Широта",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное выполнение",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
         "/api/poi/nearby": {
             "get": {
                 "description": "Возвращает ближайшие точки интереса по координатам",

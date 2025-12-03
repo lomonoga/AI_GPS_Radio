@@ -133,6 +133,24 @@ paths:
       summary: Создание новой точки интереса
       tags:
       - POI
+  /api/poi/delete:
+    delete:
+      description: Удаляет точку интереса со всеми связанными файлами
+      parameters:
+      - description: Широта
+        example: 55.7558
+        in: query
+        name: id
+        required: true
+        type: number
+      responses:
+        "200":
+          description: Успешное выполнение
+          schema:
+            type: boolean
+      summary: Удаление точки интереса по id
+      tags:
+      - POI
   /api/poi/nearby:
     get:
       description: Возвращает ближайшие точки интереса по координатам

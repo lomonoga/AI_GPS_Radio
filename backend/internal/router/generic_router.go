@@ -47,6 +47,7 @@ func SetupRouter(cfg *config.Config, db *sql.DB) http.Handler {
 	// POI endpoints
 	mux.HandleFunc("/api/poi/nearby", poiHandler.FindNearestPOI)
 	mux.HandleFunc("/api/poi/create", poiHandler.CreatePOI)
+	mux.HandleFunc("/api/poi/delete", poiHandler.DeletePOI)
 
 	// S3 proxy
 	mux.HandleFunc("/s3/files/", s3Proxy.ProxyGet)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 type POIRepository struct {
@@ -13,6 +14,41 @@ type POIRepository struct {
 
 func NewPOIRepository(db *sql.DB) *POIRepository {
 	return &POIRepository{db: db}
+}
+
+func (r *POIRepository) GetPOIById(idPOI int) (*domain.PointOfInterest, error) {
+	query := `
+        WITH nearest_poi AS (
+            SELECT 
+				p.id,
+                p.name,
+                p.description, 
+                p.created_at,
+                ST_X(p.location) as longitude,
+                ST_Y(p.location) as latitude
+            FROM points_of_interest p
+			WHERE p.id = $1
+            LIMIT 1
+        )
+        SELECT 
+            np.id, np.name, np.description, np.latitude, np.longitude, np.created_at,
+            f.id, f.s3_key, f.file_name, f.file_size, f.mime_type, f.serial_number, f.is_short, f.created_at
+        FROM nearest_poi np
+        LEFT JOIN poi_files f ON np.id = f.poi_id
+        ORDER BY f.is_short DESC, f.serial_number ASC
+    `
+	rows, err := r.db.Query(query, idPOI)
+	if err != nil {
+		return nil, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	poi, err := r.scanPOIWithFiles(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return poi, nil
 }
 
 func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) (*domain.PointOfInterest, error) {
@@ -52,9 +88,23 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
 	}
 	defer rows.Close()
 
+	poi, err := r.scanPOIWithFiles(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return poi, nil
+}
+
+func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInterest, error) {
 	var poi *domain.PointOfInterest
 
 	for rows.Next() {
+		var tempID int64
+		var tempName, tempDescription string
+		var tempLatitude, tempLongitude float64
+		var tempCreatedAt time.Time
+
 		var fileID sql.NullInt64
 		var s3Key sql.NullString
 		var fileName sql.NullString
@@ -64,54 +114,40 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
 		var isShort sql.NullBool
 		var fileCreatedAt sql.NullTime
 
+		err := rows.Scan(
+			&tempID,
+			&tempName,
+			&tempDescription,
+			&tempLatitude,
+			&tempLongitude,
+			&tempCreatedAt,
+			&fileID,
+			&s3Key,
+			&fileName,
+			&fileSize,
+			&mimeType,
+			&serialNumber,
+			&isShort,
+			&fileCreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan error: %w", err)
+		}
+
 		if poi == nil {
 			poi = &domain.PointOfInterest{
+				ID:             tempID,
+				Name:           tempName,
+				Description:    tempDescription,
+				Latitude:       tempLatitude,
+				Longitude:      tempLongitude,
+				CreatedAt:      tempCreatedAt,
 				FullAudioFiles: []*domain.File{},
-			}
-
-			err := rows.Scan(
-				&poi.ID,
-				&poi.Name,
-				&poi.Description,
-				&poi.Latitude,
-				&poi.Longitude,
-				&poi.CreatedAt,
-				&fileID,
-				&s3Key,
-				&fileName,
-				&fileSize,
-				&mimeType,
-				&serialNumber,
-				&isShort,
-				&fileCreatedAt,
-			)
-			if err != nil {
-				return nil, fmt.Errorf("scan error: %w", err)
-			}
-		} else {
-			err := rows.Scan(
-				&poi.ID,
-				&poi.Name,
-				&poi.Description,
-				&poi.Latitude,
-				&poi.Longitude,
-				&poi.CreatedAt,
-				&fileID,
-				&s3Key,
-				&fileName,
-				&fileSize,
-				&mimeType,
-				&serialNumber,
-				&isShort,
-				&fileCreatedAt,
-			)
-			if err != nil {
-				return nil, fmt.Errorf("scan error: %w", err)
 			}
 		}
 
 		if fileID.Valid {
-			file := domain.File{
+			file := &domain.File{
 				ID:           fileID.Int64,
 				S3Key:        s3Key.String,
 				FileName:     fileName.String,
@@ -123,16 +159,16 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
 			}
 
 			if file.SerialNumber == 0 { // If it is image
-				poi.ImageFile = &file
+				poi.ImageFile = file
 			} else if file.IsShort { // If it is short audio
-				poi.ShortAudioFile = &file
+				poi.ShortAudioFile = file
 			} else { // If it is full audio
-				poi.FullAudioFiles = append(poi.FullAudioFiles, &file)
+				poi.FullAudioFiles = append(poi.FullAudioFiles, file)
 			}
 		}
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
@@ -189,7 +225,6 @@ func (r *POIRepository) CreatePOI(ctx context.Context, poi *domain.PointOfIntere
 		return nil, fmt.Errorf("failed to insert image file: %w", err)
 	}
 	poi.ImageFile.ID = imageID
-	poi.ImageFile = poi.ImageFile
 
 	if poi.ShortAudioFile != nil {
 		var shortAudioID int64
@@ -234,4 +269,21 @@ func (r *POIRepository) CreatePOI(ctx context.Context, poi *domain.PointOfIntere
 	poi.ID = poiID
 
 	return poi, nil
+}
+
+func (r *POIRepository) DeletePOI(idPOI int, filesIds []int64) (bool, error) {
+	query := `
+		BEGIN;
+
+		DELETE FROM poi_files WHERE id = ANY($2);
+		DELETE FROM points_of_interest WHERE id = $1;
+
+		COMMIT;
+	`
+	_, err := r.db.Exec(query, idPOI)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete poi: %w", err)
+	}
+
+	return true, nil
 }

@@ -185,3 +185,45 @@ func (s *POIService) FindNearestPOI(latitude, longitude float64, radius int) (*d
 
 	return s.repo.FindNearestPOI(latitude, longitude, radius)
 }
+
+func (s *POIService) DeletePOI(idPOI int) (bool, error) {
+	poi, err := s.repo.GetPOIById(idPOI)
+	if err != nil {
+		return false, fmt.Errorf("POI not found: %v", err)
+	}
+
+	// Delete files from s3
+	s3FileKeys := make([]string, 0, len(poi.FullAudioFiles)+2)
+	for _, file := range poi.FullAudioFiles {
+		if file != nil {
+			s3FileKeys = append(s3FileKeys, file.S3Key)
+		}
+	}
+	if poi.ImageFile != nil {
+		s3FileKeys = append(s3FileKeys, poi.ImageFile.S3Key)
+	}
+	if poi.ShortAudioFile != nil {
+		s3FileKeys = append(s3FileKeys, poi.ShortAudioFile.S3Key)
+	}
+
+	err = s.fileStorage.DeleteFiles(s3FileKeys)
+	if err != nil {
+		return false, fmt.Errorf("falid to delete files from s3: %v", err)
+	}
+
+	// Delete poi and files from db
+	idFiles := make([]int64, 0, len(poi.FullAudioFiles)+2)
+	for _, file := range poi.FullAudioFiles {
+		if file != nil {
+			idFiles = append(idFiles, file.ID)
+		}
+	}
+	if poi.ImageFile != nil {
+		idFiles = append(idFiles, poi.ImageFile.ID)
+	}
+	if poi.ShortAudioFile != nil {
+		idFiles = append(idFiles, poi.ShortAudioFile.ID)
+	}
+
+	return s.repo.DeletePOI(idPOI, idFiles)
+}

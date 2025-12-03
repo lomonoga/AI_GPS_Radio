@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -25,6 +26,7 @@ type S3FileStorage struct {
 type FileStorage interface {
 	UploadFile(file io.Reader, fileData *domain.File) (string, error)
 	DeleteFile(s3Key string) error
+	DeleteFiles(s3Keys []string) error
 }
 
 func NewS3FileStorage(conf config.Config) (*S3FileStorage, error) {
@@ -98,6 +100,64 @@ func (s *S3FileStorage) DeleteFile(s3Key string) error {
 	_, err := s.s3Client.DeleteObject(input)
 	if err != nil {
 		return fmt.Errorf("failed to delete file from S3: %w", err)
+	}
+
+	return nil
+}
+
+func (s *S3FileStorage) DeleteFiles(s3Keys []string) error {
+	if len(s3Keys) == 0 {
+		return nil
+	}
+
+	validKeys := make([]string, 0, len(s3Keys))
+	for _, key := range s3Keys {
+		if key != "" {
+			validKeys = append(validKeys, key)
+		}
+	}
+
+	if len(validKeys) == 0 {
+		return nil
+	}
+
+	objects := make([]*s3.ObjectIdentifier, len(validKeys))
+	for i, key := range validKeys {
+		objects[i] = &s3.ObjectIdentifier{
+			Key: aws.String(key),
+		}
+	}
+
+	input := &s3.DeleteObjectsInput{
+		Bucket: aws.String(s.bucketName),
+		Delete: &s3.Delete{
+			Objects: objects,
+			Quiet:   aws.Bool(false),
+		},
+	}
+
+	result, err := s.s3Client.DeleteObjects(input)
+	if err != nil {
+		return fmt.Errorf("failed to delete files from S3: %w", err)
+	}
+
+	if len(result.Errors) > 0 {
+		errorMessages := make([]string, 0, len(result.Errors))
+		for _, e := range result.Errors {
+			errorMsg := ""
+			if e.Key != nil {
+				errorMsg += fmt.Sprintf("Key: %s, ", *e.Key)
+			}
+			if e.Code != nil {
+				errorMsg += fmt.Sprintf("Code: %s, ", *e.Code)
+			}
+			if e.Message != nil {
+				errorMsg += fmt.Sprintf("Message: %s", *e.Message)
+			}
+			errorMessages = append(errorMessages, errorMsg)
+		}
+
+		return fmt.Errorf("some files failed to delete: %v", strings.Join(errorMessages, "; "))
 	}
 
 	return nil

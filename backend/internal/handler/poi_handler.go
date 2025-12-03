@@ -222,6 +222,41 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 	h.writeJSON(w, http.StatusOK, Response{Data: poi})
 }
 
+// DeletePOI godoc
+// @Tags POI
+// @Summary Удаление точки интереса по id
+// @Description Удаляет точку интереса со всеми связанными файлами
+// @Param id query number true "Широта" example(55.7558)
+// @Success 200 {boolean} true "Успешное выполнение"
+// @Router /api/poi/delete [delete]
+func (h *POIHandler) DeletePOI(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		h.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	query := r.URL.Query()
+
+	idPOIStr := query.Get("id")
+	if idPOIStr == "" {
+		h.writeError(w, http.StatusBadRequest, "Missing required field: id")
+		return
+	}
+	idPOI, err := strconv.Atoi(idPOIStr)
+	if err != nil {
+		h.writeError(w, http.StatusBadRequest, "Invalid id format")
+		return
+	}
+
+	resultDelete, err := h.poiService.DeletePOI(idPOI)
+	if err != nil {
+		h.writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, Response{Data: resultDelete})
+}
+
 // HealthCheck godoc
 // @Tags Health
 // @Summary Проверка здоровья сервиса
