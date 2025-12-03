@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type POIRepository struct {
@@ -280,7 +282,7 @@ func (r *POIRepository) DeletePOI(idPOI int, filesIds []int64) (bool, error) {
 
 		COMMIT;
 	`
-	_, err := r.db.Exec(query, idPOI, filesIds)
+	_, err := r.db.Exec(query, idPOI, pq.Array(filesIds))
 	if err != nil {
 		return false, fmt.Errorf("failed to delete poi: %w", err)
 	}

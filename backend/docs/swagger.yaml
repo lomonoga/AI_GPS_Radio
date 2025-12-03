@@ -137,8 +137,8 @@ paths:
     delete:
       description: Удаляет точку интереса со всеми связанными файлами
       parameters:
-      - description: Широта
-        example: 55.7558
+      - description: Id точки интереса
+        example: 195
         in: query
         name: id
         required: true

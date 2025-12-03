@@ -112,8 +112,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "number",
-                        "example": 55.7558,
-                        "description": "Широта",
+                        "example": 195,
+                        "description": "Id точки интереса",
                         "name": "id",
                         "in": "query",
                         "required": true
