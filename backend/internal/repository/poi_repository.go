@@ -274,18 +274,34 @@ func (r *POIRepository) CreatePOI(ctx context.Context, poi *domain.PointOfIntere
 }
 
 func (r *POIRepository) DeletePOI(idPOI int, filesIds []int64) (bool, error) {
-	query := `
-		BEGIN;
+	tx, err := r.db.Begin()
+	if err != nil {
+		return false, fmt.Errorf("failed to begin transaction: %w", err)
+	}
 
-		DELETE FROM poi_files WHERE id = ANY($2);
-		DELETE FROM points_of_interest WHERE id = $1;
+	defer tx.Rollback()
 
-		COMMIT;
-	`
-	_, err := r.db.Exec(query, idPOI, pq.Array(filesIds))
+	if len(filesIds) > 0 {
+		_, err = tx.Exec("DELETE FROM poi_files WHERE id = ANY($1)", pq.Array(filesIds))
+		if err != nil {
+			return false, fmt.Errorf("failed to delete poi files: %w", err)
+		}
+	}
+
+	result, err := tx.Exec("DELETE FROM points_of_interest WHERE id = $1", idPOI)
 	if err != nil {
 		return false, fmt.Errorf("failed to delete poi: %w", err)
 	}
 
-	return true, nil
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return rowsAffected > 0, nil
 }
