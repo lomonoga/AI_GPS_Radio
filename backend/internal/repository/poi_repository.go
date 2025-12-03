@@ -280,7 +280,7 @@ func (r *POIRepository) DeletePOI(idPOI int, filesIds []int64) (bool, error) {
 
 		COMMIT;
 	`
-	_, err := r.db.Exec(query, idPOI)
+	_, err := r.db.Exec(query, idPOI, filesIds)
 	if err != nil {
 		return false, fmt.Errorf("failed to delete poi: %w", err)
 	}

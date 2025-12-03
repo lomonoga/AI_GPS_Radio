@@ -226,7 +226,7 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 // @Tags POI
 // @Summary Удаление точки интереса по id
 // @Description Удаляет точку интереса со всеми связанными файлами
-// @Param id query number true "Широта" example(55.7558)
+// @Param id query number true "Id точки интереса" example(195)
 // @Success 200 {boolean} true "Успешное выполнение"
 // @Router /api/poi/delete [delete]
 func (h *POIHandler) DeletePOI(w http.ResponseWriter, r *http.Request) {
