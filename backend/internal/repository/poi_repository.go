@@ -88,14 +88,14 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int, 
 				$3
 			)
 			AND (
-        		$4 IS NULL 
-        		OR cardinality($4) = 0 
-        		OR EXISTS (
-            		SELECT 1 
-            		FROM points_of_interest_type pt2
-            		WHERE pt2.point_of_interest_id = p.id
-            		AND pt2.type_of_interest_id = ANY($4)
-        		)
+				array_length($4, 1) IS NULL
+				OR array_length($4, 1) = 0
+				OR EXISTS (
+				SELECT 1 
+				FROM points_of_interest_type pt2
+				WHERE pt2.point_of_interest_id = p.id
+				AND pt2.type_of_interest_id = ANY($4)
+                )
     		)
 			GROUP BY p.id
 			ORDER BY p.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
@@ -109,13 +109,7 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int, 
         ORDER BY f.is_short DESC, f.serial_number ASC
     `
 
-	var interestsParam any
-	if len(interests) > 0 {
-		interestsParam = pq.Array(interests)
-	} else {
-		interestsParam = nil
-	}
-	rows, err := r.db.Query(query, longitude, latitude, radius, interestsParam)
+	rows, err := r.db.Query(query, longitude, latitude, radius, pq.Array(interests))
 	if err != nil {
 		return nil, fmt.Errorf("database query error: %w", err)
 	}
