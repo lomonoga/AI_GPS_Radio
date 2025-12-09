@@ -89,7 +89,7 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int, 
 			)
 			AND (
         		$4 IS NULL 
-        		OR $4 = '{}' 
+        		OR cardinality($4) = 0 
         		OR EXISTS (
             		SELECT 1 
             		FROM points_of_interest_type pt2
@@ -113,7 +113,7 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int, 
 	if len(interests) > 0 {
 		interestsParam = pq.Array(interests)
 	} else {
-		interestsParam = pq.Array([]string{})
+		interestsParam = nil
 	}
 	rows, err := r.db.Query(query, longitude, latitude, radius, interestsParam)
 	if err != nil {
