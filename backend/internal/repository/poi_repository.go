@@ -88,13 +88,13 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int, 
 				$3
 			)
 			AND (
-				array_length($4, 1) IS NULL
+				array_length($4::text[], 1) IS NULL
 				OR array_length($4, 1) = 0
 				OR EXISTS (
 				SELECT 1 
 				FROM points_of_interest_type pt2
 				WHERE pt2.point_of_interest_id = p.id
-				AND pt2.type_of_interest_id = ANY($4)
+				AND pt2.type_of_interest_id = ANY($4::text[])
                 )
     		)
 			GROUP BY p.id
