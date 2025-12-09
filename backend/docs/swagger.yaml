@@ -190,6 +190,20 @@ paths:
         in: query
         name: radius
         type: number
+      - collectionFormat: multi
+        description: Интересы точки
+        example: '["nature", "architecture"]'
+        in: query
+        items:
+          enum:
+          - nature
+          - architecture
+          - food
+          - history
+          type: string
+        name: interests
+        required: true
+        type: array
       responses:
         "200":
           description: OK

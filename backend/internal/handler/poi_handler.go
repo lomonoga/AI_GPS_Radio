@@ -97,85 +97,85 @@ func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 				fmt.Sprintf("Invalid value '%s'. Only 'nature', 'architecture', 'food', 'history' allowed", interest))
 			return
 		}
+	}
 
-		imageFile, imageHeader, err := r.FormFile("image")
-		if err != nil {
-			h.writeError(w, http.StatusBadRequest, "Image file is required: "+err.Error())
-			return
-		}
-		defer imageFile.Close()
+	imageFile, imageHeader, err := r.FormFile("image")
+	if err != nil {
+		h.writeError(w, http.StatusBadRequest, "Image file is required: "+err.Error())
+		return
+	}
+	defer imageFile.Close()
 
-		poiRequest := &domain.PointOfInterest{
-			Name:        name,
-			Description: description,
-			Latitude:    latitude,
-			Longitude:   longitude,
-			Interests:   interests,
-			CreatedAt:   time.Now(),
-		}
+	poiRequest := &domain.PointOfInterest{
+		Name:        name,
+		Description: description,
+		Latitude:    latitude,
+		Longitude:   longitude,
+		Interests:   interests,
+		CreatedAt:   time.Now(),
+	}
 
-		var shortAudioFile multipart.File
-		var shortAudioHeader *multipart.FileHeader
-		shortAudioFile, shortAudioHeader, err = r.FormFile("short_audio")
-		if err == nil && shortAudioHeader != nil {
-			defer shortAudioFile.Close()
+	var shortAudioFile multipart.File
+	var shortAudioHeader *multipart.FileHeader
+	shortAudioFile, shortAudioHeader, err = r.FormFile("short_audio")
+	if err == nil && shortAudioHeader != nil {
+		defer shortAudioFile.Close()
 
-			shortAudio := &domain.File{
-				FileName:     shortAudioHeader.Filename,
-				FileSize:     shortAudioHeader.Size,
-				MimeType:     shortAudioHeader.Header.Get("Content-Type"),
-				IsShort:      true,
-				SerialNumber: 1,
-				CreatedAt:    time.Now(),
-			}
-			poiRequest.ShortAudioFile = shortAudio
-		}
-
-		fullAudioFiles := make([]multipart.File, 0)
-		fullAudioFileData := make([]*domain.File, 0)
-
-		if r.MultipartForm != nil && r.MultipartForm.File != nil {
-			if files, ok := r.MultipartForm.File["full_audio"]; ok {
-				for i, fileHeader := range files {
-					file, err := fileHeader.Open()
-					if err != nil {
-						logger.Error.Printf("Failed to open full audio file %s: %v\n", fileHeader.Filename, err)
-						continue
-					}
-
-					fullAudio := &domain.File{
-						FileName:     fileHeader.Filename,
-						FileSize:     fileHeader.Size,
-						MimeType:     fileHeader.Header.Get("Content-Type"),
-						IsShort:      false,
-						SerialNumber: int64(i + 1),
-						CreatedAt:    time.Now(),
-					}
-
-					fullAudioFiles = append(fullAudioFiles, file)
-					fullAudioFileData = append(fullAudioFileData, fullAudio)
-				}
-			}
-		}
-		poiRequest.FullAudioFiles = fullAudioFileData
-
-		imageFileData := &domain.File{
-			FileName:     imageHeader.Filename,
-			FileSize:     imageHeader.Size,
-			MimeType:     imageHeader.Header.Get("Content-Type"),
-			IsShort:      false,
-			SerialNumber: 0,
+		shortAudio := &domain.File{
+			FileName:     shortAudioHeader.Filename,
+			FileSize:     shortAudioHeader.Size,
+			MimeType:     shortAudioHeader.Header.Get("Content-Type"),
+			IsShort:      true,
+			SerialNumber: 1,
 			CreatedAt:    time.Now(),
 		}
-
-		createdPOI, err := h.poiService.CreatePOI(poiRequest, imageFileData, imageFile, shortAudioFile, fullAudioFiles)
-		if err != nil {
-			h.writeError(w, http.StatusInternalServerError, "Failed to create point of interest: "+err.Error())
-			return
-		}
-
-		h.writeJSON(w, http.StatusCreated, Response{Data: createdPOI})
+		poiRequest.ShortAudioFile = shortAudio
 	}
+
+	fullAudioFiles := make([]multipart.File, 0)
+	fullAudioFileData := make([]*domain.File, 0)
+
+	if r.MultipartForm != nil && r.MultipartForm.File != nil {
+		if files, ok := r.MultipartForm.File["full_audio"]; ok {
+			for i, fileHeader := range files {
+				file, err := fileHeader.Open()
+				if err != nil {
+					logger.Error.Printf("Failed to open full audio file %s: %v\n", fileHeader.Filename, err)
+					continue
+				}
+
+				fullAudio := &domain.File{
+					FileName:     fileHeader.Filename,
+					FileSize:     fileHeader.Size,
+					MimeType:     fileHeader.Header.Get("Content-Type"),
+					IsShort:      false,
+					SerialNumber: int64(i + 1),
+					CreatedAt:    time.Now(),
+				}
+
+				fullAudioFiles = append(fullAudioFiles, file)
+				fullAudioFileData = append(fullAudioFileData, fullAudio)
+			}
+		}
+	}
+	poiRequest.FullAudioFiles = fullAudioFileData
+
+	imageFileData := &domain.File{
+		FileName:     imageHeader.Filename,
+		FileSize:     imageHeader.Size,
+		MimeType:     imageHeader.Header.Get("Content-Type"),
+		IsShort:      false,
+		SerialNumber: 0,
+		CreatedAt:    time.Now(),
+	}
+
+	createdPOI, err := h.poiService.CreatePOI(poiRequest, imageFileData, imageFile, shortAudioFile, fullAudioFiles)
+	if err != nil {
+		h.writeError(w, http.StatusInternalServerError, "Failed to create point of interest: "+err.Error())
+		return
+	}
+
+	h.writeJSON(w, http.StatusCreated, Response{Data: createdPOI})
 }
 
 // FindNearestPOI godoc
@@ -185,6 +185,7 @@ func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 // @Param latitude query number true "Широта" example(55.7558)
 // @Param longitude query number true "Долгота" example(37.6173)
 // @Param radius query number false "Радиус в метрах" example(100) default(150)
+// @Param interests query []string true "Интересы точки" CollectionFormat(multi) Enums(nature, architecture, food, history) example(["nature", "architecture"])
 // @Success 200 {object} domain.PointOfInterest
 // @Router /api/poi/nearby [get]
 func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
@@ -198,6 +199,15 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 	latStr := query.Get("latitude")
 	lngStr := query.Get("longitude")
 	radiusStr := query.Get("radius")
+	interests := query["interests"]
+
+	for _, interest := range interests {
+		if interest != "nature" && interest != "architecture" && interest != "food" && interest != "history" {
+			h.writeError(w, http.StatusBadRequest,
+				fmt.Sprintf("Invalid value '%s'. Only 'nature', 'architecture', 'food', 'history' allowed", interest))
+			return
+		}
+	}
 
 	if radiusStr == "" {
 		radiusStr = "150"
@@ -225,7 +235,7 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	poi, err := h.poiService.FindNearestPOI(lat, lng, radius)
+	poi, err := h.poiService.FindNearestPOI(lat, lng, radius, interests)
 	if err != nil {
 		h.writeError(w, http.StatusNotFound, err.Error())
 		return

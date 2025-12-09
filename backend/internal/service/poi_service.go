@@ -175,7 +175,7 @@ func (s *POIService) cleanupFile(s3Key string) error {
 	return s.fileStorage.DeleteFile(s3Key)
 }
 
-func (s *POIService) FindNearestPOI(latitude, longitude float64, radius int) (*domain.PointOfInterest, error) {
+func (s *POIService) FindNearestPOI(latitude, longitude float64, radius int, interests []string) (*domain.PointOfInterest, error) {
 	if latitude < -90 || latitude > 90 {
 		return nil, fmt.Errorf("invalid latitude: must be between -90 and 90")
 	}

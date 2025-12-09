@@ -177,6 +177,24 @@ const docTemplate = `{
                         "description": "Радиус в метрах",
                         "name": "radius",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "nature",
+                                "architecture",
+                                "food",
+                                "history"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "example": "[\"nature\", \"architecture\"]",
+                        "description": "Интересы точки",
+                        "name": "interests",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
