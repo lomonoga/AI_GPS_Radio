@@ -183,7 +183,7 @@ func (s *POIService) FindNearestPOI(latitude, longitude float64, radius int, int
 		return nil, fmt.Errorf("invalid longitude: must be between -180 and 180")
 	}
 
-	return s.repo.FindNearestPOI(latitude, longitude, radius)
+	return s.repo.FindNearestPOI(latitude, longitude, radius, interests)
 }
 
 func (s *POIService) DeletePOI(idPOI int) (bool, error) {
