@@ -4,6 +4,7 @@ import (
 	"aigpsservice/internal/domain"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -131,7 +132,7 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 		var tempName, tempDescription string
 		var tempLatitude, tempLongitude float64
 		var tempCreatedAt time.Time
-		var tempInterest []string
+		var tempInterestsJSON []byte
 
 		var fileID sql.NullInt64
 		var s3Key sql.NullString
@@ -149,7 +150,7 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 			&tempLatitude,
 			&tempLongitude,
 			&tempCreatedAt,
-			&tempInterest,
+			&tempInterestsJSON,
 			&fileID,
 			&s3Key,
 			&fileName,
@@ -164,6 +165,13 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 		}
 
 		if poi == nil {
+			var interests []string
+			if len(tempInterestsJSON) > 0 {
+				if err := json.Unmarshal(tempInterestsJSON, &interests); err != nil {
+					return nil, fmt.Errorf("failed to unmarshal interests JSON: %w", err)
+				}
+			}
+
 			poi = &domain.PointOfInterest{
 				ID:             tempID,
 				Name:           tempName,
@@ -171,7 +179,7 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 				Latitude:       tempLatitude,
 				Longitude:      tempLongitude,
 				CreatedAt:      tempCreatedAt,
-				Interests:      tempInterest,
+				Interests:      interests,
 				FullAudioFiles: []*domain.File{},
 			}
 		}

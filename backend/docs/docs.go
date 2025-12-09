@@ -193,8 +193,7 @@ const docTemplate = `{
                         "example": "[\"nature\", \"architecture\"]",
                         "description": "Интересы точки",
                         "name": "interests",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {

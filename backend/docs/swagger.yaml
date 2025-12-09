@@ -202,7 +202,6 @@ paths:
           - history
           type: string
         name: interests
-        required: true
         type: array
       responses:
         "200":
