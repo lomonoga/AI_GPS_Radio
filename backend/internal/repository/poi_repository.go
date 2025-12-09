@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lib/pq"
@@ -28,12 +29,19 @@ func (r *POIRepository) GetPOIById(idPOI int) (*domain.PointOfInterest, error) {
                 p.created_at,
                 ST_X(p.location) as longitude,
                 ST_Y(p.location) as latitude
+				COALESCE(
+                    json_agg(DISTINCT t.id) FILTER (WHERE t.id IS NOT NULL),
+                    '[]'::json
+                ) as interests
             FROM points_of_interest p
+			LEFT JOIN points_of_interest_type pt ON p.id = pt.point_of_interest_id
+            LEFT JOIN type_of_interest t ON pt.type_of_interest_id = t.id
 			WHERE p.id = $1
+			GROUP BY p.id
             LIMIT 1
         )
         SELECT 
-            np.id, np.name, np.description, np.latitude, np.longitude, np.created_at,
+            np.id, np.name, np.description, np.latitude, np.longitude, np.created_at, np.interests,
             f.id, f.s3_key, f.file_name, f.file_size, f.mime_type, f.serial_number, f.is_short, f.created_at
         FROM nearest_poi np
         LEFT JOIN poi_files f ON np.id = f.poi_id
@@ -63,21 +71,28 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
                 p.created_at,
                 ST_X(p.location) as longitude,
                 ST_Y(p.location) as latitude,
+				COALESCE(
+                    json_agg(DISTINCT t.id) FILTER (WHERE t.id IS NOT NULL),
+                    '[]'::json
+                ) as interests
                 ST_Distance(
                     p.location::geography, 
                     ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
                 ) as distance_meters
             FROM points_of_interest p
+			LEFT JOIN points_of_interest_type pt ON p.id = pt.point_of_interest_id
+            LEFT JOIN type_of_interest t ON pt.type_of_interest_id = t.id
 			WHERE ST_DWithin(
 				p.location::geography,
 				ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
 				$3
 			)
             ORDER BY p.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
+			GROUP BY p.id
             LIMIT 1
         )
         SELECT 
-            np.id, np.name, np.description, np.latitude, np.longitude, np.created_at,
+            np.id, np.name, np.description, np.latitude, np.longitude, np.created_at, np.interests,
             f.id, f.s3_key, f.file_name, f.file_size, f.mime_type, f.serial_number, f.is_short, f.created_at
         FROM nearest_poi np
         LEFT JOIN poi_files f ON np.id = f.poi_id
@@ -106,6 +121,7 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 		var tempName, tempDescription string
 		var tempLatitude, tempLongitude float64
 		var tempCreatedAt time.Time
+		var tempInterest []string
 
 		var fileID sql.NullInt64
 		var s3Key sql.NullString
@@ -123,6 +139,7 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 			&tempLatitude,
 			&tempLongitude,
 			&tempCreatedAt,
+			&tempInterest,
 			&fileID,
 			&s3Key,
 			&fileName,
@@ -144,6 +161,7 @@ func (r *POIRepository) scanPOIWithFiles(rows *sql.Rows) (*domain.PointOfInteres
 				Latitude:       tempLatitude,
 				Longitude:      tempLongitude,
 				CreatedAt:      tempCreatedAt,
+				Interests:      tempInterest,
 				FullAudioFiles: []*domain.File{},
 			}
 		}
@@ -262,6 +280,30 @@ func (r *POIRepository) CreatePOI(ctx context.Context, poi *domain.PointOfIntere
 			return nil, fmt.Errorf("failed to insert full audio file: %w", err)
 		}
 		fullAudio.ID = fullAudioID
+	}
+
+	if len(poi.Interests) > 0 {
+		interestsQuery := `
+        INSERT INTO points_of_interest_type (point_of_interest_id, type_of_interest_id)
+        VALUES `
+
+		values := []any{}
+		placeholders := []string{}
+
+		for i, interest := range poi.Interests {
+			placeholders = append(placeholders, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+			values = append(values, poiID, interest)
+		}
+
+		interestsQuery += strings.Join(placeholders, ", ")
+		interestsQuery += `
+        ON CONFLICT (point_of_interest_id, type_of_interest_id) 
+        DO NOTHING`
+
+		_, err = tx.ExecContext(ctx, interestsQuery, values...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert interests: %w", err)
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

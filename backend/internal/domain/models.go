@@ -19,6 +19,7 @@ type PointOfInterest struct {
 	Description    string    `json:"description,omitempty"`
 	Latitude       float64   `json:"latitude"`
 	Longitude      float64   `json:"longitude"`
+	Interests      []string  `json:"interests"`
 	ImageFile      *File     `json:"image_file,omitempty"`
 	FullAudioFiles []*File   `json:"full_audio_files,omitempty"`
 	ShortAudioFile *File     `json:"short_audio_file,omitempty"`

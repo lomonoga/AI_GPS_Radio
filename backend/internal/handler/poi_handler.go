@@ -47,6 +47,7 @@ func (h *POIHandler) writeError(w http.ResponseWriter, status int, message strin
 // @Param description formData string true "Описание точки интереса"
 // @Param latitude formData number true "Широта"
 // @Param longitude formData number true "Долгота"
+// @Param interests formData []string true "Интересы точки" CollectionFormat(multi) Enums(nature, architecture, food, history)
 // @Param image formData file true "Изображение точки интереса"
 // @Param short_audio formData file true "Короткое аудио"
 // @Param full_audio formData []file true "Полные аудио файлы"
@@ -70,6 +71,7 @@ func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 	latStr := r.FormValue("latitude")
 	lngStr := r.FormValue("longitude")
+	interests := r.Form["interests"]
 
 	if name == "" || description == "" || latStr == "" || lngStr == "" {
 		h.writeError(w, http.StatusBadRequest, "Missing required fields: name, description, latitude, longitude")
@@ -88,6 +90,13 @@ func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, interest := range interests {
+    if interest != "nature" && interest != "architecture" && interest != "food" && interest != "history" {
+        h.writeError(w, http.StatusBadRequest, 
+            fmt.Sprintf("Invalid value '%s'. Only 'nature', 'architecture', 'food', 'history' allowed", interest))
+        return
+    }
+
 	imageFile, imageHeader, err := r.FormFile("image")
 	if err != nil {
 		h.writeError(w, http.StatusBadRequest, "Image file is required: "+err.Error())
@@ -100,6 +109,7 @@ func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 		Description: description,
 		Latitude:    latitude,
 		Longitude:   longitude,
+		Interests:   interests,
 		CreatedAt:   time.Now(),
 	}
 
