@@ -33,6 +33,10 @@ definitions:
         type: integer
       image_file:
         $ref: '#/definitions/domain.File'
+      interests:
+        items:
+          type: string
+        type: array
       latitude:
         type: number
       longitude:
@@ -99,6 +103,19 @@ paths:
         name: longitude
         required: true
         type: number
+      - collectionFormat: multi
+        description: Интересы точки
+        in: formData
+        items:
+          enum:
+          - nature
+          - architecture
+          - food
+          - history
+          type: string
+        name: interests
+        required: true
+        type: array
       - description: Изображение точки интереса
         in: formData
         name: image

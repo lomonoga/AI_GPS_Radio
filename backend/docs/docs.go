@@ -55,6 +55,23 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "nature",
+                                "architecture",
+                                "food",
+                                "history"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Интересы точки",
+                        "name": "interests",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
                         "type": "file",
                         "description": "Изображение точки интереса",
                         "name": "image",
@@ -313,6 +330,12 @@ const docTemplate = `{
                 },
                 "image_file": {
                     "$ref": "#/definitions/domain.File"
+                },
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "latitude": {
                     "type": "number"
