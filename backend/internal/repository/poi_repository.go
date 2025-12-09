@@ -28,7 +28,7 @@ func (r *POIRepository) GetPOIById(idPOI int) (*domain.PointOfInterest, error) {
                 p.description, 
                 p.created_at,
                 ST_X(p.location) as longitude,
-                ST_Y(p.location) as latitude
+                ST_Y(p.location) as latitude,
 				COALESCE(
                     json_agg(DISTINCT t.id) FILTER (WHERE t.id IS NOT NULL),
                     '[]'::json
@@ -61,7 +61,7 @@ func (r *POIRepository) GetPOIById(idPOI int) (*domain.PointOfInterest, error) {
 	return poi, nil
 }
 
-func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) (*domain.PointOfInterest, error) {
+func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int, interests []string) (*domain.PointOfInterest, error) {
 	query := `
         WITH nearest_poi AS (
             SELECT 
@@ -74,7 +74,7 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
 				COALESCE(
                     json_agg(DISTINCT t.id) FILTER (WHERE t.id IS NOT NULL),
                     '[]'::json
-                ) as interests
+                ) as interests,
                 ST_Distance(
                     p.location::geography, 
                     ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
@@ -87,8 +87,18 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
 				ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
 				$3
 			)
-            ORDER BY p.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
+			AND (
+        		$4 IS NULL 
+        		OR $4 = '{}' 
+        		OR EXISTS (
+            		SELECT 1 
+            		FROM points_of_interest_type pt2
+            		WHERE pt2.point_of_interest_id = p.id
+            		AND pt2.type_of_interest_id = ANY($4)
+        		)
+    		)
 			GROUP BY p.id
+			ORDER BY p.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
             LIMIT 1
         )
         SELECT 
@@ -99,7 +109,13 @@ func (r *POIRepository) FindNearestPOI(latitude, longitude float64, radius int) 
         ORDER BY f.is_short DESC, f.serial_number ASC
     `
 
-	rows, err := r.db.Query(query, longitude, latitude, radius)
+	var interestsParam any
+	if len(interests) > 0 {
+		interestsParam = pq.Array(interests)
+	} else {
+		interestsParam = pq.Array([]string{})
+	}
+	rows, err := r.db.Query(query, longitude, latitude, radius, interestsParam)
 	if err != nil {
 		return nil, fmt.Errorf("database query error: %w", err)
 	}
