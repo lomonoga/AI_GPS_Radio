@@ -8,15 +8,12 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -28,7 +25,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aigpsradio.R
 import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 import com.example.aigpsradio.viewmodel.LocationViewModel
-import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -40,7 +36,8 @@ import org.osmdroid.views.overlay.Marker
 @Composable
 fun PlayerScreen(
     locationviewModel: LocationViewModel,
-    locationAudioViewModel: LocationAudioViewModel
+    locationAudioViewModel: LocationAudioViewModel,
+    onOpenInterests: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by locationAudioViewModel.uiState.collectAsState()
@@ -130,7 +127,6 @@ fun PlayerScreen(
             skipHiddenState = true
         )
     )
-    val scope = rememberCoroutineScope()
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -165,23 +161,25 @@ fun PlayerScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.plotinka),
-                                contentDescription = "Header image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
+                            PlaceImage( viewModel = locationAudioViewModel)
+//                            Image(
+//                                painter = painterResource(id = R.drawable.plotinka),
+//                                contentDescription = "My Location",
+//                                modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+//                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 ) {
                     AudioPlayerSheet(
                         uiState = uiState,
@@ -193,10 +191,7 @@ fun PlayerScreen(
                             }
                         },
                         onSkipNext = { locationAudioViewModel.skipToNext() },
-                        onSkipPrevious = { locationAudioViewModel.skipToPrevious() },
-                        onExpand = {
-                            scope.launch { scaffoldState.bottomSheetState.expand() }
-                        }
+                        onSkipPrevious = { locationAudioViewModel.skipToPrevious() }
                     )
                 }
             }
@@ -229,22 +224,45 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // --- FAB для центрирования карты ---
-            FloatingActionButton(
-                onClick = {
-                    locationOverlay?.myLocation?.let { loc ->
-                        mapView?.controller?.animateTo(loc)
-                    }
-                },
+            Column(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd) // правый нижний угол
-                    .padding(end = 20.dp, bottom = 180.dp) // отступы от краёв
-                    .size(56.dp)
+                    .fillMaxHeight()
+                    .wrapContentWidth()
+                    .align(Alignment.CenterEnd) // или Alignment.TopEnd, если хочешь прижать к верху
+                    .padding(end = 16.dp, top = 24.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.SpaceBetween, // распределит одну FAB сверху, другую снизу
+                horizontalAlignment = Alignment.End
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_my_location),
-                    contentDescription = "My Location"
-                )
+
+                // --- FAB для открытия экрана интересов---
+                FloatingActionButton(
+                    onClick = { onOpenInterests() }, // вызываем callback
+                    modifier = Modifier
+                        .padding(end = 10.dp, top = 40.dp)
+                        .size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_interests),
+                        contentDescription = "Interests"
+                    )
+                }
+
+                // --- FAB для центрирования карты ---
+                FloatingActionButton(
+                    onClick = {
+                        locationOverlay?.myLocation?.let { loc ->
+                            mapView?.controller?.animateTo(loc)
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(end = 10.dp, bottom = 180.dp)
+                        .size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_my_location),
+                        contentDescription = "My Location"
+                    )
+                }
             }
         }
     }

@@ -1,8 +1,6 @@
 package com.example.aigpsradio.data.repository
 
 import android.util.Log
-import com.example.aigpsradio.model.remote.AudioRequest
-import com.example.aigpsradio.model.remote.LocationPayload
 import com.example.aigpsradio.model.remote.NearestPlaceResponse
 import com.example.aigpsradio.model.remote.SimpleApi
 import kotlinx.coroutines.CancellationException
@@ -24,14 +22,18 @@ class Repository(
         longitude: Double
     ): Result<NearestPlaceResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getNearestPlace(LocationPayload(latitude, longitude))
+            val response = api.getNearestPlace(latitude, longitude)
             val body = response.body()
 
             if (response.isSuccessful && body != null) {
-                Log.d(TAG, "Nearest place request successful, place: ${body.placeName}")
-                Result.success(body)
+                // Извлекаем данные из wrapper-объекта
+                val placeData = body.data
+                Log.d(TAG, "Nearest place request successful, place: ${placeData.placeName}")
+                Result.success(placeData)
             } else {
-                Result.failure(Exception("Server error: ${response.code()}"))
+                val errorMsg = "Server error: ${response.code()}"
+                Log.e(TAG, errorMsg)
+                Result.failure(Exception(errorMsg))
             }
 
         } catch (ce: CancellationException) {
@@ -47,18 +49,18 @@ class Repository(
      * Запрашивает аудио у сервера асинхронно и возвращает Result с ResponseBody или ошибкой.
      * Важно: ResponseBody нужно закрыть/потребить (например, через saveAudioToCache), чтобы не утекли ресурсы.
      */
-
-    suspend fun streamAudio(audioName: String): Result<ResponseBody> = withContext(Dispatchers.IO) {
-
+    suspend fun streamAudio(s3key: String): Result<ResponseBody> = withContext(Dispatchers.IO) {
         try {
-            val response = api.streamAudio(AudioRequest(audioName))
+            val response = api.streamAudio(s3key)
             val body = response.body()
 
             if (response.isSuccessful && body != null) {
-                Log.d(TAG, "Stream request successful,response code = ${response.code()}")
+                Log.d(TAG, "Stream request successful, response code = ${response.code()}")
                 Result.success(body)
             } else {
-                Result.failure(Exception("Server error: ${response.code()}"))
+                val errorMsg = "Server error: ${response.code()}"
+                Log.e(TAG, errorMsg)
+                Result.failure(Exception(errorMsg))
             }
 
         } catch (ce: CancellationException) {
@@ -71,24 +73,25 @@ class Repository(
     }
 
     /**
-     * Сохраняет аудио в кэш ассинхронно, возвращает успешно созданный локальный файл или ошибку.
+     * Сохраняет аудио в кэш асинхронно, возвращает успешно созданный локальный файл или ошибку.
      */
-
     suspend fun saveAudioToCache(
         responseBody: ResponseBody,
-        cacheDir: File
+        cacheDir: File,
+        fileName: String? = null
     ): Result<File> = withContext(Dispatchers.IO) {
-
         try {
-            val audioFile = File(cacheDir, "streamed_audio_${System.currentTimeMillis()}.mp3")
-            // никогда не переиспользуем ранее скачанный файл — даже если это тот же трек!
-            // присваиваем ему имя в мс
+            // Используем переданное имя файла или генерируем новое
+            val finalFileName = fileName ?: "streamed_audio_${System.currentTimeMillis()}.mp3"
+            val audioFile = File(cacheDir, finalFileName)
 
             audioFile.outputStream().use { output ->
                 responseBody.byteStream().use { input ->
                     input.copyTo(output)
                 }
             }
+
+            Log.d(TAG, "Audio saved to cache: ${audioFile.absolutePath}, size: ${audioFile.length()} bytes")
             Result.success(audioFile)
 
         } catch (ce: CancellationException) {
@@ -96,6 +99,38 @@ class Repository(
             throw ce
         } catch (e: Exception) {
             Log.e(TAG, "saveAudioToCache error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Вспомогательная функция для загрузки и сохранения аудио одной операцией.
+     */
+    suspend fun downloadAndCacheAudio(
+        s3Key: String,
+        cacheDir: File
+    ): Result<File> = withContext(Dispatchers.IO) {
+        try {
+            // Загружаем аудио
+            val streamResult = streamAudio(s3Key)
+
+            if (streamResult.isFailure) {
+                return@withContext Result.failure(
+                    streamResult.exceptionOrNull() ?: Exception("Failed to stream audio")
+                )
+            }
+
+            val responseBody = streamResult.getOrNull()
+                ?: return@withContext Result.failure(Exception("Empty response body"))
+
+            // Сохраняем в кэш
+            saveAudioToCache(responseBody, cacheDir, s3Key.substringAfterLast('/'))
+
+        } catch (ce: CancellationException) {
+            Log.w(TAG, "downloadAndCacheAudio cancelled", ce)
+            throw ce
+        } catch (e: Exception) {
+            Log.e(TAG, "downloadAndCacheAudio error: ${e.message}", e)
             Result.failure(e)
         }
     }

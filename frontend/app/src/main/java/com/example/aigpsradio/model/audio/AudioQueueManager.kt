@@ -18,8 +18,14 @@ data class QueuedTrack(
 )
 
 /**
- * Manages the audio queue and handles place transitions.
+ * Represents a pending place transition.
  */
+data class PendingPlaceTransition(
+    val placeId: Int,
+    val placeName: String,
+    val audioFiles: List<AudioFile>
+)
+
 class AudioQueueManager {
 
     private val _queue = MutableStateFlow<List<QueuedTrack>>(emptyList())
@@ -31,9 +37,10 @@ class AudioQueueManager {
     private val _currentPlaceId = MutableStateFlow<Int?>(null)
     val currentPlaceId: StateFlow<Int?> = _currentPlaceId.asStateFlow()
 
-    /**
-     * Returns the current track if available.
-     */
+    // NEW: Pending transition that will be applied after current track finishes
+    private val _pendingTransition = MutableStateFlow<PendingPlaceTransition?>(null)
+    val pendingTransition: StateFlow<PendingPlaceTransition?> = _pendingTransition.asStateFlow()
+
     fun getCurrentTrack(): QueuedTrack? {
         val index = _currentTrackIndex.value
         val queueList = _queue.value
@@ -52,6 +59,14 @@ class AudioQueueManager {
     }
 
     fun moveToNext(): Boolean {
+        // NEW: Check if we should apply pending transition
+        val pending = _pendingTransition.value
+        if (pending != null) {
+            Log.d(TAG, "Applying pending transition to ${pending.placeName}")
+            applyPendingTransition()
+            return _queue.value.isNotEmpty()
+        }
+
         val currentQueue = _queue.value
         if (currentQueue.isEmpty()) {
             _currentTrackIndex.value = 0
@@ -72,7 +87,7 @@ class AudioQueueManager {
     }
 
     /**
-     * Handles a new place: either continues current queue or transitions to new place.
+     * Handles a new place detection.
      *
      * @param newPlaceId The ID of the newly detected place
      * @param newPlaceName The name of the new place
@@ -86,28 +101,49 @@ class AudioQueueManager {
     ): Boolean {
         val currentId = _currentPlaceId.value
 
-        // First time or same place - just update/continue
-        if (currentId == null || currentId == newPlaceId) {
-            if (currentId == null) {
-                Log.d(TAG, "Initial place: $newPlaceName (ID: $newPlaceId)")
-                initializeQueue(newPlaceId, newPlaceName, newAudioFiles)
-            } else {
-                Log.d(TAG, "Same place, continuing: $newPlaceName (ID: $newPlaceId)")
-            }
+        // First time - initialize immediately
+        if (currentId == null) {
+            Log.d(TAG, "Initial place: $newPlaceName (ID: $newPlaceId)")
+            initializeQueue(newPlaceId, newPlaceName, newAudioFiles)
             _currentPlaceId.value = newPlaceId
             return false
         }
 
-        // New place detected - need transition
-        Log.d(TAG, "Place changed: $currentId -> $newPlaceId ($newPlaceName)")
-        transitionToNewPlace(newPlaceId, newPlaceName, newAudioFiles)
-        _currentPlaceId.value = newPlaceId
+        // Same place - do nothing
+        if (currentId == newPlaceId) {
+            Log.d(TAG, "Same place, continuing: $newPlaceName (ID: $newPlaceId)")
+            return false
+        }
+
+        // NEW: Different place - queue the transition
+        Log.d(TAG, "Place change detected: $currentId -> $newPlaceId ($newPlaceName). Queuing transition.")
+        _pendingTransition.value = PendingPlaceTransition(
+            placeId = newPlaceId,
+            placeName = newPlaceName,
+            audioFiles = newAudioFiles
+        )
         return true
     }
 
     /**
-     * Initializes the queue with audio files from a place.
+     * NEW: Applies the pending place transition.
+     * Called automatically in moveToNext() when current track finishes.
      */
+    private fun applyPendingTransition() {
+        val pending = _pendingTransition.value ?: return
+
+        transitionToNewPlace(
+            newPlaceId = pending.placeId,
+            newPlaceName = pending.placeName,
+            newAudioFiles = pending.audioFiles
+        )
+
+        _currentPlaceId.value = pending.placeId
+        _pendingTransition.value = null
+
+        Log.d(TAG, "Pending transition applied to ${pending.placeName}")
+    }
+
     private fun initializeQueue(placeId: Int, placeName: String, audioFiles: List<AudioFile>) {
         val newQueue = audioFiles.map { audioFile ->
             QueuedTrack(audioFile, placeId, placeName)
@@ -126,30 +162,14 @@ class AudioQueueManager {
         newPlaceName: String,
         newAudioFiles: List<AudioFile>
     ) {
-        val currentQueue = _queue.value.toMutableList()
-        val currentIndex = _currentTrackIndex.value
-
-        // Create new tracks for the new place
+        // Simply replace with new queue since we're transitioning after current track finished
         val newTracks = newAudioFiles.map { audioFile ->
             QueuedTrack(audioFile, newPlaceId, newPlaceName)
         }
 
-        // If there's a currently playing track, keep it and remove all after it
-        if (currentIndex < currentQueue.size) {
-            // Keep tracks up to and including current
-            val tracksToKeep = currentQueue.subList(0, currentIndex + 1)
-
-            // Add new place tracks after current track
-            val updatedQueue = tracksToKeep + newTracks
-
-            _queue.value = updatedQueue
-            Log.d(TAG, "Transitioned: kept current track, removed ${currentQueue.size - currentIndex - 1} old tracks, added ${newTracks.size} new tracks")
-        } else {
-            // No current track playing, just set new queue
-            _queue.value = newTracks
-            _currentTrackIndex.value = 0
-            Log.d(TAG, "Transitioned: no current track, set new queue with ${newTracks.size} tracks")
-        }
+        _queue.value = newTracks
+        _currentTrackIndex.value = 0
+        Log.d(TAG, "Transitioned to new place: ${newTracks.size} tracks for $newPlaceName")
     }
 
     /**
@@ -159,6 +179,7 @@ class AudioQueueManager {
         _queue.value = emptyList()
         _currentTrackIndex.value = 0
         _currentPlaceId.value = null
+        _pendingTransition.value = null
         Log.d(TAG, "Queue cleared")
     }
 

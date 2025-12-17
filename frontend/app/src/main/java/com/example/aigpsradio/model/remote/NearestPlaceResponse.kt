@@ -4,14 +4,18 @@ import com.google.gson.annotations.SerializedName
 
 // Response Models
 
+data class NearestPlaceApiResponse(
+    @SerializedName("data") val data: NearestPlaceResponse
+)
+
 data class NearestPlaceResponse(
     @SerializedName("id") val id: Int,
     @SerializedName("name") val placeName: String,
-    @SerializedName("image") val image: String,
     @SerializedName("description") val description: String,
     @SerializedName("latitude") val latitudeResponse: Double,
     @SerializedName("longitude") val longitudeResponse: Double,
+    @SerializedName("image_file") val imageFile: ImageFile,
     @SerializedName("full_audio_files") val fullAudioFiles: List<AudioFile>,
-    @SerializedName("short_audio_file") val shortAudioFile: AudioFile,  // пока не используется
-    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("short_audio_file") val shortAudioFile: AudioFile,
+    @SerializedName("created_at") val createdAt: String
 )
