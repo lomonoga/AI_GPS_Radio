@@ -36,7 +36,8 @@ import org.osmdroid.views.overlay.Marker
 @Composable
 fun PlayerScreen(
     locationviewModel: LocationViewModel,
-    locationAudioViewModel: LocationAudioViewModel
+    locationAudioViewModel: LocationAudioViewModel,
+    onOpenInterests: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by locationAudioViewModel.uiState.collectAsState()
@@ -223,22 +224,45 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // --- FAB для центрирования карты ---
-            FloatingActionButton(
-                onClick = {
-                    locationOverlay?.myLocation?.let { loc ->
-                        mapView?.controller?.animateTo(loc)
-                    }
-                },
+            Column(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 20.dp, bottom = 180.dp)
-                    .size(56.dp)
+                    .fillMaxHeight()
+                    .wrapContentWidth()
+                    .align(Alignment.CenterEnd) // или Alignment.TopEnd, если хочешь прижать к верху
+                    .padding(end = 16.dp, top = 24.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.SpaceBetween, // распределит одну FAB сверху, другую снизу
+                horizontalAlignment = Alignment.End
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_my_location),
-                    contentDescription = "My Location"
-                )
+
+                // --- FAB для открытия экрана интересов---
+                FloatingActionButton(
+                    onClick = { onOpenInterests() }, // вызываем callback
+                    modifier = Modifier
+                        .padding(end = 10.dp, top = 40.dp)
+                        .size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_interests),
+                        contentDescription = "Interests"
+                    )
+                }
+
+                // --- FAB для центрирования карты ---
+                FloatingActionButton(
+                    onClick = {
+                        locationOverlay?.myLocation?.let { loc ->
+                            mapView?.controller?.animateTo(loc)
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(end = 10.dp, bottom = 180.dp)
+                        .size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_my_location),
+                        contentDescription = "My Location"
+                    )
+                }
             }
         }
     }

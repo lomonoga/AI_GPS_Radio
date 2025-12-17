@@ -135,16 +135,20 @@ fun AppNavHost(
 
         composable(route = Destination.InterestsSelection.route) {
             InterestsSelectionScreen(
-                onContinue = {
-                    navHostController.navigate(Destination.Player.route)
-                }
+                onContinue = { navHostController.navigate(Destination.Player.route) },
+                onOpenVoiceInterests = {
+                    navHostController.navigate(Destination.VoiceInterests.route)
+                },
             )
         }
 
         composable(route = Destination.Player.route) {
             PlayerScreen(
                 locationviewModel = locationViewModel,
-                locationAudioViewModel = locationAudioViewModel
+                locationAudioViewModel = locationAudioViewModel,
+                onOpenInterests = {
+                    navHostController.navigate(Destination.InterestsSelection.route)
+                }
             )
         }
     }
