@@ -194,7 +194,7 @@ fun InterestsSelectionScreen(
     val interests = remember {
         listOf(
             Interest("architecture", "Архитектура", R.drawable.ic_architecture),
-            Interest("gastronomy", "Гастрономия", R.drawable.ic_food),
+            Interest("food", "Гастрономия", R.drawable.ic_food),
             Interest("history", "История", R.drawable.ic_history),
             Interest("nature", "Природа", R.drawable.ic_nature)
         )

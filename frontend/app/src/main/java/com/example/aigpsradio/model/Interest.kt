@@ -26,7 +26,7 @@ object InterestsData {
                 icon = R.drawable.ic_architecture
             ),
             Interest(
-                id = "gastronomy",
+                id = "food",
                 title = "Гастрономия",
                 icon = R.drawable.ic_food
             ),

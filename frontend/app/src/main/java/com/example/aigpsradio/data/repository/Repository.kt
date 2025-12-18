@@ -29,17 +29,17 @@ class Repository(
                 "API_DEBUG",
                 "lat=$latitude lon=$longitude interests=$interests"
             )
-            val response = api.getNearestPlace(latitude, longitude, radius = 2500, interests)
+            val response = api.getNearestPlace(latitude, longitude, radius = 25000, interests)
             val body = response.body()
 
             if (response.isSuccessful && body != null) {
                 // Извлекаем данные из wrapper-объекта
                 val placeData = body.data
-                Log.d(TAG, "Nearest place request successful, place: ${placeData.placeName}")
+                Log.d("API_DEBUG", "Nearest place request successful, place: ${placeData.placeName}")
                 Result.success(placeData)
             } else {
                 val errorMsg = "Server error: ${response.code()}"
-                Log.e(TAG, errorMsg)
+                Log.e("API_DEBUG", errorMsg)
                 Result.failure(Exception(errorMsg))
             }
 

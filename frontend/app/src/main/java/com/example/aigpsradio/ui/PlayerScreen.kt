@@ -101,6 +101,41 @@ fun PlayerScreen(
         }
     }
 
+    // Add this to track when the place actually changes
+    LaunchedEffect(uiState.currentPlaceName, uiState.currentTrackName) {
+        // Use both placeName and trackName to ensure we detect actual place switches
+        uiState.currentPlaceName?.let { placeName ->
+            val currentPlace = locationAudioViewModel.getCurrentPlaceCoordinates()
+
+            currentPlace?.let { (lat, lon) ->
+                mapView?.let { map ->
+                    // Remove old marker if exists
+                    poiMarker?.let {
+                        map.overlays.remove(it)
+                        Log.d("API_DEBUG", "Removed old POI marker")
+                    }
+
+                    // Create new marker
+                    val marker = Marker(map).apply {
+                        position = GeoPoint(lat, lon)
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        title = placeName
+                        icon = ContextCompat.getDrawable(
+                            map.context,
+                            R.drawable.ic_place
+                        )
+                    }
+
+                    map.overlays.add(marker)
+                    poiMarker = marker
+                    map.invalidate()
+
+                    Log.d("API_DEBUG", "Updated POI marker for: $placeName at $lat, $lon")
+                }
+            } ?: Log.d("API_DEBUG", "No coordinates available for: $placeName")
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
