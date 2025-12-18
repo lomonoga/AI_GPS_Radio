@@ -305,7 +305,7 @@ fun PlayerScreen(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_my_location),
-                        contentDescription = "My Location"
+                        contentDescription = "My Location",
                     )
                 }
             }

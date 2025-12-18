@@ -134,8 +134,9 @@ fun AudioPlayerSheet(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Индикатор загрузки
-        if (uiState.isLoadingPlace || uiState.isLoadingAudio) {
+        // Только индикатор загрузки аудио
+        // if (uiState.isLoadingPlace || uiState.isLoadingAudio) {
+        if (uiState.isLoadingAudio) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -146,7 +147,8 @@ fun AudioPlayerSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (uiState.isLoadingPlace) "Определение места..." else "Загрузка аудио...",
+                    text = "Загрузка аудио...",
+                    // text = if (uiState.isLoadingPlace) "Определение места..." else "Загрузка аудио...",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -156,20 +158,24 @@ fun AudioPlayerSheet(
         // Сообщение об ошибке
         uiState.errorMessage?.let { error ->
             Text(
-                text = error,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
+                // text = error,
+                text = "Что-то пошло не так, проверьте подключение к интернету",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         // Описание места
         Text(
             text = uiState.currentPlaceDescription ?: "Загрузка описания",
             style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
         // Индикатор статуса воспроизведения
