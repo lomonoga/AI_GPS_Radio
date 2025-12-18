@@ -184,7 +184,7 @@ func (h *POIHandler) CreatePOI(w http.ResponseWriter, r *http.Request) {
 // @Description Возвращает ближайшие точки интереса по координатам
 // @Param latitude query number true "Широта" example(55.7558)
 // @Param longitude query number true "Долгота" example(37.6173)
-// @Param radius query number false "Радиус в метрах" example(100) default(150)
+// @Param radius query number false "Радиус в метрах" example(100) default(500)
 // @Param interests query []string false "Интересы точки" CollectionFormat(multi) Enums(nature, architecture, food, history) example(["nature", "architecture"])
 // @Success 200 {object} domain.PointOfInterest
 // @Router /api/poi/nearby [get]
@@ -210,7 +210,7 @@ func (h *POIHandler) FindNearestPOI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if radiusStr == "" {
-		radiusStr = "150"
+		radiusStr = "500"
 	}
 	radius, err := strconv.Atoi(radiusStr)
 	if err != nil {
