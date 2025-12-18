@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aigpsradio.R
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.model.Interest
 import com.example.aigpsradio.ui.theme.MyApplicationTheme
 
@@ -185,6 +187,7 @@ fun CustomTopAppBar(
 
 @Composable
 fun InterestsSelectionScreen(
+    interestsPreferences: InterestsPreferences,
     onContinue: () -> Unit = {},
     onOpenVoiceInterests: () -> Unit = {},
 ) {
@@ -197,8 +200,9 @@ fun InterestsSelectionScreen(
         )
     }
 
+    // Загружаем сохраненные интересы при создании
     var selectedInterests by remember {
-        mutableStateOf(setOf("architecture")) // Архитектура выбрана по умолчанию
+        mutableStateOf(interestsPreferences.getInterests()) // Архитектура выбрана по умолчанию
     }
 
     Scaffold(
@@ -219,7 +223,11 @@ fun InterestsSelectionScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = onContinue,
+                        onClick = {
+                            // Сохраняем интересы перед нажатием кнопки "Продолжить"
+                            interestsPreferences.saveInterests(selectedInterests)
+                            onContinue()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -292,25 +300,19 @@ fun InterestsSelectionScreen(
     heightDp = 800,
 )
 fun PreviewInterestsSelectionScreen_Light() {
+    val fakeInterestsPreferences = InterestsPreferences(
+        context = LocalContext.current
+    )
     MaterialTheme {
-        Surface {
-            InterestsSelectionScreen()
+        MyApplicationTheme(darkTheme = false) {
+            InterestsSelectionScreen(
+                interestsPreferences = fakeInterestsPreferences,
+                onContinue = {},
+                onOpenVoiceInterests = {}
+            )
         }
     }
 }
 
-// Превью экрана (темная тема)
-@Composable
-@Preview(
-    showBackground = true,
-    widthDp = 360,
-    heightDp = 800,
-)
-fun PreviewInterestsSelectionScreen_Dark() {
-    MaterialTheme {
-        MyApplicationTheme(darkTheme = true) {
-            InterestsSelectionScreen(onContinue = {})
-        }
-    }
-}
+
 

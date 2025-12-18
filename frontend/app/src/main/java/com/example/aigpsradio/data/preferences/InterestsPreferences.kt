@@ -20,12 +20,6 @@ class InterestsPreferences(context: Context) {
         return prefs.getStringSet(KEY_INTERESTS, setOf("architecture")) ?: setOf("architecture")
     }
 
-    fun clearInterests() {
-        prefs.edit()
-            .remove(KEY_INTERESTS)
-            .apply()
-    }
-
     companion object {
         private const val PREFS_NAME = "aigpsradio_prefs"
         private const val KEY_INTERESTS = "user_interests"

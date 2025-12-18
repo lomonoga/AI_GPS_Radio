@@ -15,6 +15,7 @@ interface SimpleApi {
     suspend fun getNearestPlace(
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double,
+        @Query("radius") radius: Int,
         @Query("interests") interests: List<String>,
     ): Response<NearestPlaceApiResponse>
 

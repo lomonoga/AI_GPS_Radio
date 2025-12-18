@@ -13,6 +13,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.ui.InterestsSelectionScreen
 import com.example.aigpsradio.ui.PermissionsScreenSimple
 import com.example.aigpsradio.ui.PlayerScreen
@@ -25,7 +26,8 @@ fun AppNavHost(
     navHostController: NavHostController,
     openPlayer: Boolean,
     locationViewModel: LocationViewModel,
-    locationAudioViewModel: LocationAudioViewModel
+    locationAudioViewModel: LocationAudioViewModel,
+    interestsPreferences: InterestsPreferences
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
@@ -139,6 +141,7 @@ fun AppNavHost(
                 onOpenVoiceInterests = {
                     navHostController.navigate(Destination.VoiceInterests.route)
                 },
+                interestsPreferences = interestsPreferences,
             )
         }
 

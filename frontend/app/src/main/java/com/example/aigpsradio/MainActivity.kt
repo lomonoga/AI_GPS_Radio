@@ -99,7 +99,8 @@ class MainActivity : ComponentActivity() {
                     navHostController = navController,
                     openPlayer = openPlayer.value,
                     locationViewModel = locationViewModel!!,
-                    locationAudioViewModel = locationAudioViewModel!!
+                    locationAudioViewModel = locationAudioViewModel!!,
+                    interestsPreferences = interestsPreferences
                 )
             }
         }
