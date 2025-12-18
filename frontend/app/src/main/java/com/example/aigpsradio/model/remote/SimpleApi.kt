@@ -14,7 +14,8 @@ interface SimpleApi {
     @GET("api/poi/nearby")
     suspend fun getNearestPlace(
         @Query("latitude") latitude: Double,
-        @Query("longitude") longitude: Double
+        @Query("longitude") longitude: Double,
+        @Query("interests") interests: List<String>?,
     ): Response<NearestPlaceApiResponse>
 
     @Streaming

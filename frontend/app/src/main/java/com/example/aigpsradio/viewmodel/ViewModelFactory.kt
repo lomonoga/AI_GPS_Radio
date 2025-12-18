@@ -3,11 +3,13 @@ package com.example.aigpsradio.viewmodel
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.data.repository.Repository
 
 class ViewModelFactory(
     private val repository: Repository,
-    private val application: Application? = null
+    private val application: Application? = null,
+    private val interestsPreferences: InterestsPreferences? = null
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -18,7 +20,8 @@ class ViewModelFactory(
             }
             modelClass.isAssignableFrom(LocationAudioViewModel::class.java) -> {
                 requireNotNull(application) { "Application required for LocationAudioViewModel" }
-                LocationAudioViewModel(application, repository) as T
+                requireNotNull(interestsPreferences) { "InterestsPreferences required for LocationAudioViewModel" }
+                LocationAudioViewModel(application, repository, interestsPreferences) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

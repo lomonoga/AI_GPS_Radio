@@ -17,5 +17,6 @@ data class NearestPlaceResponse(
     @SerializedName("image_file") val imageFile: ImageFile,
     @SerializedName("full_audio_files") val fullAudioFiles: List<AudioFile>,
     @SerializedName("short_audio_file") val shortAudioFile: AudioFile,
+    @SerializedName("interests") val interests: List<String>,
     @SerializedName("created_at") val createdAt: String
 )

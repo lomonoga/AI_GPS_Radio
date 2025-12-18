@@ -10,6 +10,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.aigpsradio.BuildConfig.BASE_URL
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.data.repository.Repository
 import com.example.aigpsradio.model.audio.AudioPlaybackManager
 import com.example.aigpsradio.model.audio.AudioQueueManager
@@ -50,7 +51,8 @@ data class PendingPlaceData(
 
 class LocationAudioViewModel(
     application: Application,
-    private val repository: Repository
+    private val repository: Repository,
+    private val interestsPreferences: InterestsPreferences
 ) : AndroidViewModel(application) {
 
     private val audioPlaybackManager = AudioPlaybackManager(application)
@@ -154,7 +156,10 @@ class LocationAudioViewModel(
     private suspend fun checkLocationAndUpdatePlaylist(latitude: Double, longitude: Double) {
         _uiState.value = _uiState.value.copy(isLoadingPlace = true, errorMessage = null)
 
-        repository.getNearestPlace(latitude, longitude)
+        // Получаем сохраненные интересы пользователя
+        val userInterests = interestsPreferences.getInterests().toList()
+
+        repository.getNearestPlace(latitude, longitude, userInterests)
             .onSuccess { placeResponse ->
                 val newPlaceData = PendingPlaceData(
                     placeName = placeResponse.placeName,

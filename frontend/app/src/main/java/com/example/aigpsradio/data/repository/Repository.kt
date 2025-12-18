@@ -19,10 +19,12 @@ class Repository(
      */
     suspend fun getNearestPlace(
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        interests: List<String>
     ): Result<NearestPlaceResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getNearestPlace(latitude, longitude)
+            //val interests = listOf("[]")
+            val response = api.getNearestPlace(latitude, longitude, null)
             val body = response.body()
 
             if (response.isSuccessful && body != null) {
