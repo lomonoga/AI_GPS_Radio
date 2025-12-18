@@ -1,6 +1,8 @@
 package com.example.aigpsradio.ui
 
 import android.content.ContentValues.TAG
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -115,15 +117,23 @@ fun PlayerScreen(
                         Log.d("API_DEBUG", "Removed old POI marker")
                     }
 
-                    // Create new marker
                     val marker = Marker(map).apply {
                         position = GeoPoint(lat, lon)
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         title = placeName
-                        icon = ContextCompat.getDrawable(
-                            map.context,
-                            R.drawable.ic_place
-                        )
+                        icon = ContextCompat.getDrawable(map.context, R.drawable.ic_place)
+
+                        setOnMarkerClickListener { marker, mapView ->
+                            val uri = Uri.parse("geo:0,0?q=${marker.position.latitude},${marker.position.longitude}(${marker.title})")
+                            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            try {
+                                mapView.context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Log.e("Marker", "Failed to open map", e)
+                            }
+                            true
+                        }
                     }
 
                     map.overlays.add(marker)
