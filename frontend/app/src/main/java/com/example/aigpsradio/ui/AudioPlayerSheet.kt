@@ -62,17 +62,13 @@ fun AudioPlayerSheet(
                 // Кнопка Previous
                 IconButton(
                     onClick = onSkipPrevious,
-                    enabled = uiState.currentTrackIndex > 0,
+                    enabled = uiState.queueSize > 0,
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = android.R.drawable.ic_media_previous),
                         contentDescription = "Previous",
-                        tint = if (uiState.currentTrackIndex > 0) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        }
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 

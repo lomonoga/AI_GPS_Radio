@@ -48,18 +48,30 @@ class AudioQueueManager {
     }
 
     fun moveToPrevious(): Boolean {
+        val currentQueue = _queue.value
+        if (currentQueue.isEmpty()) {
+            Log.d(TAG, "Queue is empty, cannot move to previous")
+            return false
+        }
+
         val currentIndex = _currentTrackIndex.value
-        if (currentIndex > 0) {
-            _currentTrackIndex.value = currentIndex - 1
-            Log.d(TAG, "Moved to previous track: index=${currentIndex - 1}")
+
+        // Clamp index to valid range first
+        val clampedIndex = currentIndex.coerceIn(0, currentQueue.size - 1)
+
+        if (clampedIndex > 0) {
+            _currentTrackIndex.value = clampedIndex - 1
+            Log.d(TAG, "Moved to previous track: index=${clampedIndex - 1}")
             return true
         }
-        Log.d(TAG, "Already at first track")
-        return false
+
+        Log.d(TAG, "Already at first track, restarting current track")
+        _currentTrackIndex.value = 0
+        return true  // Return true to restart the current track
     }
 
     fun moveToNext(): Boolean {
-        // NEW: Check if we should apply pending transition
+        // Check if we should apply pending transition
         val pending = _pendingTransition.value
         if (pending != null) {
             Log.d(TAG, "Applying pending transition to ${pending.placeName}")
@@ -80,8 +92,8 @@ class AudioQueueManager {
             return true
         }
 
-        // No more tracks
-        _currentTrackIndex.value = currentQueue.size
+        // No more tracks - keep index at last valid position
+        _currentTrackIndex.value = currentQueue.size - 1  // Changed from currentQueue.size
         Log.d(TAG, "No more tracks in queue")
         return false
     }

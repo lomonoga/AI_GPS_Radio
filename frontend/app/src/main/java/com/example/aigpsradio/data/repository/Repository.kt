@@ -109,36 +109,4 @@ class Repository(
             Result.failure(e)
         }
     }
-
-    /**
-     * Вспомогательная функция для загрузки и сохранения аудио одной операцией.
-     */
-    suspend fun downloadAndCacheAudio(
-        s3Key: String,
-        cacheDir: File
-    ): Result<File> = withContext(Dispatchers.IO) {
-        try {
-            // Загружаем аудио
-            val streamResult = streamAudio(s3Key)
-
-            if (streamResult.isFailure) {
-                return@withContext Result.failure(
-                    streamResult.exceptionOrNull() ?: Exception("Failed to stream audio")
-                )
-            }
-
-            val responseBody = streamResult.getOrNull()
-                ?: return@withContext Result.failure(Exception("Empty response body"))
-
-            // Сохраняем в кэш
-            saveAudioToCache(responseBody, cacheDir, s3Key.substringAfterLast('/'))
-
-        } catch (ce: CancellationException) {
-            Log.w(TAG, "downloadAndCacheAudio cancelled", ce)
-            throw ce
-        } catch (e: Exception) {
-            Log.e(TAG, "downloadAndCacheAudio error: ${e.message}", e)
-            Result.failure(e)
-        }
-    }
 }

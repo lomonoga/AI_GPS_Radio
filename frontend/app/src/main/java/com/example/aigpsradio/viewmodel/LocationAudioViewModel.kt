@@ -389,7 +389,14 @@ class LocationAudioViewModel(
      */
     fun skipToPrevious() {
         audioPlaybackManager.stop()
-        if (queueManager.moveToPrevious()) {
+
+        val hasPrevious = queueManager.moveToPrevious()
+
+        if (hasPrevious) {
+            playNextInQueue()
+            Log.d(TAG, "Skipped to previous track")
+        } else {
+            Log.d(TAG, "Already at first track, restarting current track")
             playNextInQueue()
         }
     }
