@@ -23,8 +23,14 @@ class Repository(
         interests: List<String>
     ): Result<NearestPlaceResponse> = withContext(Dispatchers.IO) {
         try {
-            //val interests = listOf("[]")
-            val response = api.getNearestPlace(latitude, longitude, null)
+            val interests = listOf("architecture")
+
+            Log.d(
+                "API_DEBUG",
+                "lat=$latitude lon=$longitude interests=$interests"
+            )
+
+            val response = api.getNearestPlace(latitude, longitude, interests )
             val body = response.body()
 
             if (response.isSuccessful && body != null) {

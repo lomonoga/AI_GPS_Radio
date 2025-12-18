@@ -157,43 +157,45 @@ class LocationAudioViewModel(
         _uiState.value = _uiState.value.copy(isLoadingPlace = true, errorMessage = null)
 
         // Получаем сохраненные интересы пользователя
-        val userInterests = interestsPreferences.getInterests().toList()
+        val userInterests = interestsPreferences.getInterests()?.toList()
 
-        repository.getNearestPlace(latitude, longitude, userInterests)
-            .onSuccess { placeResponse ->
-                val newPlaceData = PendingPlaceData(
-                    placeName = placeResponse.placeName,
-                    description = placeResponse.description,
-                    imageName = placeResponse.imageFile.s3Key,
-                    coordinates = Pair(placeResponse.latitudeResponse, placeResponse.longitudeResponse)
-                )
+        if (userInterests != null) {
+            repository.getNearestPlace(latitude, longitude, userInterests)
+                .onSuccess { placeResponse ->
+                    val newPlaceData = PendingPlaceData(
+                        placeName = placeResponse.placeName,
+                        description = placeResponse.description,
+                        imageName = placeResponse.imageFile.s3Key,
+                        coordinates = Pair(placeResponse.latitudeResponse, placeResponse.longitudeResponse)
+                    )
 
-                _uiState.value = _uiState.value.copy(isLoadingPlace = false)
+                    _uiState.value = _uiState.value.copy(isLoadingPlace = false)
 
-                // Handle place change in queue manager
-                val isNewPlace = queueManager.handleNewPlace(
-                    newPlaceId = placeResponse.id,
-                    newPlaceName = placeResponse.placeName,
-                    newAudioFiles = placeResponse.fullAudioFiles
-                )
+                    // Handle place change in queue manager
+                    val isNewPlace = queueManager.handleNewPlace(
+                        newPlaceId = placeResponse.id,
+                        newPlaceName = placeResponse.placeName,
+                        newAudioFiles = placeResponse.fullAudioFiles
+                    )
 
-                if (isNewPlace) {
-                    // NEW PLACE: Store the data but don't apply it yet
-                    Log.d(TAG, "New place detected, UI will update after current track finishes")
-                    pendingPlaceData = newPlaceData
-                } else {
-                    // SAME PLACE or INITIAL: Apply immediately
-                    Log.d(TAG, "Same place or initial - updating UI immediately")
-                    applyPlaceData(newPlaceData)
+                    if (isNewPlace) {
+                        // NEW PLACE: Store the data but don't apply it yet
+                        Log.d(TAG, "New place detected, UI will update after current track finishes")
+                        pendingPlaceData = newPlaceData
+                    } else {
+                        // SAME PLACE or INITIAL: Apply immediately
+                        Log.d(TAG, "Same place or initial - updating UI immediately")
+                        applyPlaceData(newPlaceData)
+                    }
                 }
-            }
-            .onFailure { error ->
-                Log.e(TAG, "Failed to get nearest place: ${error.message}", error)
-                _uiState.value = _uiState.value.copy(
-                    isLoadingPlace = false,
-                    errorMessage = "Failed to get location: ${error.localizedMessage}"
-                )
-            }
+                .onFailure { error ->
+                    Log.e(TAG, "Failed to get nearest place: ${error.message}", error)
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingPlace = false,
+                        errorMessage = "Failed to get location: ${error.localizedMessage}"
+                    )
+                }
+        }
     }
 
     // NEW: Apply place data to UI
