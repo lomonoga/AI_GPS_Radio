@@ -70,13 +70,6 @@ fun AppNavHost(
         }
     }
 
-    fun checkMicPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     fun checkNotifsPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
@@ -89,7 +82,6 @@ fun AppNavHost(
     }
     val permissionsGranted = checkLocationPermission() &&
             checkBackgroundPermission() &&
-            checkMicPermission() &&
             checkNotifsPermission()
 
     val startDestination = if (!permissionsGranted || isFirstLaunch) {
@@ -107,13 +99,11 @@ fun AppNavHost(
             // Перечитываем статус разрешений при каждом refreshTrigger
             val locationGranted = remember(refreshTrigger) { checkLocationPermission() }
             val backgroundGranted = remember(refreshTrigger) { checkBackgroundPermission() }
-            val micGranted = remember(refreshTrigger) { checkMicPermission() }
             val notifsGranted = remember(refreshTrigger) { checkNotifsPermission() }
 
             PermissionsScreenSimple(
                 locationGranted = locationGranted,
                 backgroundGranted = backgroundGranted,
-                micGranted = micGranted,
                 notifsGranted = notifsGranted,
                 onContinue = {
                     prefs.edit().putBoolean("is_first_launch", false).apply()
