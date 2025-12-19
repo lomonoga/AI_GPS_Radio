@@ -19,9 +19,6 @@
     <!-- Уведомления permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Разрешение для голосового управления, выбор интересов /записи команд -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
     <!-- Редирект на карту -->
     <queries>
         <intent>

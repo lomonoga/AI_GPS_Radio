@@ -36,12 +36,11 @@ class MainActivity : ComponentActivity() {
     ) { permissions ->
         val fineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        val mic = permissions[Manifest.permission.RECORD_AUDIO] ?: false
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions[Manifest.permission.POST_NOTIFICATIONS] ?: false
         } else true
 
-        Log.d(TAG, "Permissions granted - Fine: $fineLocation, Coarse: $coarseLocation, Mic: $mic, Notification: $notification")
+        Log.d(TAG, "Permissions granted - Fine: $fineLocation, Coarse: $coarseLocation, Notification: $notification")
 
         // Если геолокация предоставлена, запрашиваем фоновую (только для Android 10+)
         if (fineLocation && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

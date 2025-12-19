@@ -124,7 +124,6 @@ fun PermissionItem(
 fun PermissionsScreenSimple(
     locationGranted: Boolean = false,
     backgroundGranted: Boolean = false,
-    micGranted: Boolean = false,
     notifsGranted: Boolean = false,
     onContinue: () -> Unit
 ) {
@@ -190,14 +189,6 @@ fun PermissionsScreenSimple(
                     title = "Фоновая геолокация",
                     subtitle = "Для воспроизведения радио и отслеживания в фоне",
                     granted = backgroundGranted
-                )
-
-                // Микрофон
-                PermissionItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = "Доступ к микрофону",
-                    subtitle = "Для голосового управления и выбора интересов",
-                    granted = micGranted
                 )
 
                 // Уведомления
