@@ -20,11 +20,15 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,13 +38,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aigpsradio.R
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.model.Interest
+import com.example.aigpsradio.ui.theme.MyApplicationTheme
 
 /**
  * Карточки с иконками: Развелечения, Природа, Архитектура, Гастрономия
@@ -52,7 +60,7 @@ fun InterestCategoryCard(
     interest: Interest,
     isSelected: Boolean,
     onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
@@ -133,34 +141,80 @@ fun InterestCategoryCard(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTopAppBar(
+    title: String,
+    onOpenVoiceInterests: () -> Unit = {},
+) {
+    TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+        ),
+        title = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 16.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Center)
+                )
+
+                FloatingActionButton(
+                    onClick = { onOpenVoiceInterests() },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .align(Alignment.CenterEnd)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_voice),
+                        contentDescription = "Action"
+                    )
+                }
+            }
+        }
+    )
+}
+
 @Composable
 fun InterestsSelectionScreen(
-    onContinue: () -> Unit = {}
+    interestsPreferences: InterestsPreferences,
+    onContinue: () -> Unit = {},
+    onOpenVoiceInterests: () -> Unit = {},
 ) {
     val interests = remember {
         listOf(
-            Interest("nature", "Природа", R.drawable.ic_location),
-            Interest("architecture", "Архитектура", R.drawable.notifications),
-            Interest("gastronomy", "Гастрономия", R.drawable.mic),
-            Interest("history", "История", R.drawable.notifications),
-            Interest("music", "Музыка", R.drawable.mic),
-            Interest("forest", "Лес и походы", R.drawable.notifications)
+            Interest("architecture", "Архитектура", R.drawable.ic_architecture),
+            Interest("food", "Гастрономия", R.drawable.ic_food),
+            Interest("history", "История", R.drawable.ic_history),
+            Interest("nature", "Природа", R.drawable.ic_nature)
         )
     }
 
+    // Загружаем сохраненные интересы при создании
     var selectedInterests by remember {
-        mutableStateOf(setOf("architecture")) // Архитектура выбрана по умолчанию
+        mutableStateOf(interestsPreferences.getInterests()) // Архитектура выбрана по умолчанию
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBarSimple(title = "Ваши интересы")
+            CustomTopAppBar(title = "Ваши интересы", onOpenVoiceInterests =  onOpenVoiceInterests)
         },
         bottomBar = {
             Surface(
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp
+                tonalElevation = 6.dp,
+                shadowElevation = 6.dp,
+                modifier = Modifier.padding(bottom = 14.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -169,7 +223,11 @@ fun InterestsSelectionScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = onContinue,
+                        onClick = {
+                            // Сохраняем интересы перед нажатием кнопки "Продолжить"
+                            interestsPreferences.saveInterests(selectedInterests)
+                            onContinue()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -185,7 +243,11 @@ fun InterestsSelectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp)
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 15.dp
+                )
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -229,4 +291,28 @@ fun InterestsSelectionScreen(
         }
     }
 }
+
+// Превью экрана (светлая тема)
+@Composable
+@Preview(
+    showBackground = true,
+    widthDp = 360,
+    heightDp = 800,
+)
+fun PreviewInterestsSelectionScreen_Light() {
+    val fakeInterestsPreferences = InterestsPreferences(
+        context = LocalContext.current
+    )
+    MaterialTheme {
+        MyApplicationTheme(darkTheme = false) {
+            InterestsSelectionScreen(
+                interestsPreferences = fakeInterestsPreferences,
+                onContinue = {},
+                onOpenVoiceInterests = {}
+            )
+        }
+    }
+}
+
+
 

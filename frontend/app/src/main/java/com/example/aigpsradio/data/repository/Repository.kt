@@ -1,7 +1,7 @@
 package com.example.aigpsradio.data.repository
 
 import android.util.Log
-import com.example.aigpsradio.model.remote.AudioRequest
+import com.example.aigpsradio.model.remote.NearestPlaceResponse
 import com.example.aigpsradio.model.remote.SimpleApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -15,21 +15,59 @@ class Repository(
     private val api: SimpleApi
 ) {
     /**
-     * Запрашивает аудио у сервера асинхронно и возвращает Result с ResponseBody или ошибкой.
-     * Важно: ResponseBody нужно закрыть/потребить (например, через saveAudioToCache), чтобы не утекли ресурсы.
+     * Получает информацию о ближайшем месте по координатам.
      */
-
-    suspend fun streamAudio(audioName: String): Result<ResponseBody> = withContext(Dispatchers.IO) {
-
+    suspend fun getNearestPlace(
+        latitude: Double,
+        longitude: Double,
+        interests: List<String>
+    ): Result<NearestPlaceResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.streamAudio(AudioRequest(audioName))
+            //val interests = listOf("architecture")
+
+            Log.d(
+                "API_DEBUG",
+                "lat=$latitude lon=$longitude interests=$interests"
+            )
+            val response = api.getNearestPlace(latitude, longitude, radius = 25000, interests)
             val body = response.body()
 
             if (response.isSuccessful && body != null) {
-                Log.d(TAG, "Stream request successful,response code = ${response.code()}")
+                // Извлекаем данные из wrapper-объекта
+                val placeData = body.data
+                Log.d("API_DEBUG", "Nearest place request successful, place: ${placeData.placeName}")
+                Result.success(placeData)
+            } else {
+                val errorMsg = "Server error: ${response.code()}"
+                Log.e("API_DEBUG", errorMsg)
+                Result.failure(Exception(errorMsg))
+            }
+
+        } catch (ce: CancellationException) {
+            Log.w(TAG, "getNearestPlace cancelled", ce)
+            throw ce
+        } catch (e: Exception) {
+            Log.e(TAG, "getNearestPlace error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Запрашивает аудио у сервера асинхронно и возвращает Result с ResponseBody или ошибкой.
+     * Важно: ResponseBody нужно закрыть/потребить (например, через saveAudioToCache), чтобы не утекли ресурсы.
+     */
+    suspend fun streamAudio(s3key: String): Result<ResponseBody> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.streamAudio(s3key)
+            val body = response.body()
+
+            if (response.isSuccessful && body != null) {
+                Log.d(TAG, "Stream request successful, response code = ${response.code()}")
                 Result.success(body)
             } else {
-                Result.failure(Exception("Server error: ${response.code()}"))
+                val errorMsg = "Server error: ${response.code()}"
+                Log.e(TAG, errorMsg)
+                Result.failure(Exception(errorMsg))
             }
 
         } catch (ce: CancellationException) {
@@ -42,24 +80,25 @@ class Repository(
     }
 
     /**
-     * Сохраняет аудио в кэш ассинхронно, возвращает успешно созданный локальный файл или ошибку.
+     * Сохраняет аудио в кэш асинхронно, возвращает успешно созданный локальный файл или ошибку.
      */
-
     suspend fun saveAudioToCache(
         responseBody: ResponseBody,
-        cacheDir: File
+        cacheDir: File,
+        fileName: String? = null
     ): Result<File> = withContext(Dispatchers.IO) {
-
         try {
-            val audioFile = File(cacheDir, "streamed_audio_${System.currentTimeMillis()}.mp3")
-            // никогда не переиспользуем ранее скачанный файл — даже если это тот же трек!
-            // присваиваем ему имя в мс
+            // Используем переданное имя файла или генерируем новое
+            val finalFileName = fileName ?: "streamed_audio_${System.currentTimeMillis()}.mp3"
+            val audioFile = File(cacheDir, finalFileName)
 
             audioFile.outputStream().use { output ->
                 responseBody.byteStream().use { input ->
                     input.copyTo(output)
                 }
             }
+
+            Log.d(TAG, "Audio saved to cache: ${audioFile.absolutePath}, size: ${audioFile.length()} bytes")
             Result.success(audioFile)
 
         } catch (ce: CancellationException) {

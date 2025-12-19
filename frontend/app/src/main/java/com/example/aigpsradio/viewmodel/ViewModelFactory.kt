@@ -1,18 +1,29 @@
 package com.example.aigpsradio.viewmodel
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.data.repository.Repository
 
-class ViewModelFactory (
-    private val repository: Repository
+class ViewModelFactory(
+    private val repository: Repository,
+    private val application: Application? = null,
+    private val interestsPreferences: InterestsPreferences? = null
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(AudioStreamViewModel::class.java)) {
-            return AudioStreamViewModel(repository) as T
+        return when {
+            modelClass.isAssignableFrom(AudioStreamViewModel::class.java) -> {
+                AudioStreamViewModel(repository) as T
+            }
+            modelClass.isAssignableFrom(LocationAudioViewModel::class.java) -> {
+                requireNotNull(application) { "Application required for LocationAudioViewModel" }
+                requireNotNull(interestsPreferences) { "InterestsPreferences required for LocationAudioViewModel" }
+                LocationAudioViewModel(application, repository, interestsPreferences) as T
+            }
+            else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

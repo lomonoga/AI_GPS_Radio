@@ -13,17 +13,21 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.ui.InterestsSelectionScreen
 import com.example.aigpsradio.ui.PermissionsScreenSimple
 import com.example.aigpsradio.ui.PlayerScreen
 import com.example.aigpsradio.ui.VoiceInterestsScreen
 import com.example.aigpsradio.viewmodel.LocationViewModel
+import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 
 @Composable
 fun AppNavHost(
     navHostController: NavHostController,
     openPlayer: Boolean,
-    locationViewModel: LocationViewModel
+    locationViewModel: LocationViewModel,
+    locationAudioViewModel: LocationAudioViewModel,
+    interestsPreferences: InterestsPreferences
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
@@ -133,14 +137,22 @@ fun AppNavHost(
 
         composable(route = Destination.InterestsSelection.route) {
             InterestsSelectionScreen(
-                onContinue = {
-                    navHostController.navigate(Destination.Player.route)
-                }
+                onContinue = { navHostController.navigate(Destination.Player.route) },
+                onOpenVoiceInterests = {
+                    navHostController.navigate(Destination.VoiceInterests.route)
+                },
+                interestsPreferences = interestsPreferences,
             )
         }
 
         composable(route = Destination.Player.route) {
-            PlayerScreen(viewModel = locationViewModel)
+            PlayerScreen(
+                locationviewModel = locationViewModel,
+                locationAudioViewModel = locationAudioViewModel,
+                onOpenInterests = {
+                    navHostController.navigate(Destination.InterestsSelection.route)
+                }
+            )
         }
     }
 
