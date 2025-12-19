@@ -95,7 +95,7 @@ fun AppNavHost(
     val startDestination = if (!permissionsGranted || isFirstLaunch) {
         Destination.Permission.route
     } else {
-        Destination.VoiceInterests.route
+        Destination.InterestsSelection.route
     }
 
     NavHost(
@@ -117,24 +117,12 @@ fun AppNavHost(
                 notifsGranted = notifsGranted,
                 onContinue = {
                     prefs.edit().putBoolean("is_first_launch", false).apply()
-                    navHostController.navigate(Destination.VoiceInterests.route) {
+                    navHostController.navigate(Destination.InterestsSelection.route) {
                         popUpTo(Destination.Permission.route) { inclusive = true }
                     }
                 }
             )
         }
-
-        composable(route = Destination.VoiceInterests.route) {
-            VoiceInterestsScreen(
-                onComplete = {
-                    navHostController.navigate(Destination.Player.route)
-                },
-                onSkip = {
-                    navHostController.navigate(Destination.InterestsSelection.route)
-                }
-            )
-        }
-
         composable(route = Destination.InterestsSelection.route) {
             InterestsSelectionScreen(
                 onContinue = { navHostController.navigate(Destination.Player.route) },

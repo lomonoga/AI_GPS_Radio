@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.aigpsradio.BuildConfig.BASE_URL
@@ -213,6 +214,8 @@ class LocationAudioViewModel(
             Glide.with(getApplication<Application>().applicationContext)
                 .asBitmap()
                 .load("${BASE_URL}/s3/files/${imageName}")
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
                 .into(object : CustomTarget<Bitmap>() {
                     override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         _uiState.value = _uiState.value.copy(placeImageBitmap = resource)

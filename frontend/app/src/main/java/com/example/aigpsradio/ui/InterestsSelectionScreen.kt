@@ -146,7 +146,6 @@ fun InterestCategoryCard(
 @Composable
 fun CustomTopAppBar(
     title: String,
-    onOpenVoiceInterests: () -> Unit = {},
 ) {
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
@@ -168,18 +167,6 @@ fun CustomTopAppBar(
                         .fillMaxWidth()
                         .align(Alignment.Center)
                 )
-
-                FloatingActionButton(
-                    onClick = { onOpenVoiceInterests() },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .align(Alignment.CenterEnd)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_voice),
-                        contentDescription = "Action"
-                    )
-                }
             }
         }
     )
@@ -208,7 +195,7 @@ fun InterestsSelectionScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            CustomTopAppBar(title = "Ваши интересы", onOpenVoiceInterests =  onOpenVoiceInterests)
+            CustomTopAppBar(title = "Ваши интересы")
         },
         bottomBar = {
             Surface(
