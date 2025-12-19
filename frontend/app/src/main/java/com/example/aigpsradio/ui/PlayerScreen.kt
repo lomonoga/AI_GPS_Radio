@@ -1,40 +1,149 @@
 package com.example.aigpsradio.ui
 
 import android.content.ContentValues.TAG
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aigpsradio.R
+import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 import com.example.aigpsradio.viewmodel.LocationViewModel
-import kotlinx.coroutines.launch
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import org.osmdroid.views.overlay.Marker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(viewModel: LocationViewModel) {
+fun PlayerScreen(
+    locationviewModel: LocationViewModel,
+    locationAudioViewModel: LocationAudioViewModel,
+    onOpenInterests: () -> Unit = {}
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val uiState by locationAudioViewModel.uiState.collectAsState()
+
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var locationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
-    // Слой на карте, который отображает местоположение
+    var hasStartedPlayback by remember { mutableStateOf(false) }
+    var poiMarker by remember { mutableStateOf<Marker?>(null) }
 
     // Автоматический запуск отслеживания при создании экрана
     LaunchedEffect(Unit) {
-        viewModel.startLocationTracking()
+        locationviewModel.startLocationTracking()
         Log.d(TAG, "PlayerScreen created, starting location tracking")
+    }
+
+    LaunchedEffect(locationOverlay) {
+        snapshotFlow { locationOverlay?.myLocation }
+            .collect { location ->
+                location?.let {
+                    val lat = it.latitude
+                    val lon = it.longitude
+
+                    // Обновляем локацию в locationaudioViewModel
+                    locationAudioViewModel.updateLocation(lat, lon)
+
+                    // Запускаем воспроизведение при получении первой локации
+                    if (!hasStartedPlayback) {
+                        locationAudioViewModel.startLocationBasedPlayback(lat, lon)
+                        hasStartedPlayback = true
+                        Log.d(TAG, "Started location-based playback at $lat, $lon")
+                    }
+                }
+            }
+    }
+    // Добавьте LaunchedEffect для отслеживания изменений места
+    LaunchedEffect(uiState.currentPlaceName) {
+        // Получаем координаты текущего места из API
+        val currentPlace = locationAudioViewModel.getCurrentPlaceCoordinates()
+
+        currentPlace?.let { (lat, lon) ->
+            mapView?.let { map ->
+                // Удаляем старый маркер если есть
+                poiMarker?.let { map.overlays.remove(it) }
+
+                // Создаем новый маркер
+                val marker = Marker(map).apply {
+                    position = GeoPoint(lat, lon)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    title = uiState.currentPlaceName ?: "POI"
+                    icon = ContextCompat.getDrawable(
+                        map.context,
+                        R.drawable.ic_place // используйте свою иконку
+                    )
+                }
+
+                map.overlays.add(marker)
+                poiMarker = marker
+                map.invalidate()
+            }
+        }
+    }
+
+    // Add this to track when the place actually changes
+    LaunchedEffect(uiState.currentPlaceName, uiState.currentTrackName) {
+        // Use both placeName and trackName to ensure we detect actual place switches
+        uiState.currentPlaceName?.let { placeName ->
+            val currentPlace = locationAudioViewModel.getCurrentPlaceCoordinates()
+
+            currentPlace?.let { (lat, lon) ->
+                mapView?.let { map ->
+                    // Remove old marker if exists
+                    poiMarker?.let {
+                        map.overlays.remove(it)
+                        Log.d("API_DEBUG", "Removed old POI marker")
+                    }
+
+                    val marker = Marker(map).apply {
+                        position = GeoPoint(lat, lon)
+                        title = placeName
+                        icon = ContextCompat.getDrawable(map.context, R.drawable.ic_place)
+
+                        setOnMarkerClickListener { marker, mapView ->
+                            val uri = Uri.parse("geo:0,0?q=${marker.position.latitude},${marker.position.longitude}(${marker.title})")
+                            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            try {
+                                mapView.context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Log.e("Marker", "Failed to open map", e)
+                            }
+                            true
+                        }
+                    }
+
+                    map.overlays.add(marker)
+                    poiMarker = marker
+                    map.invalidate()
+
+                    Log.d("API_DEBUG", "Updated POI marker for: $placeName at $lat, $lon")
+                }
+            } ?: Log.d("API_DEBUG", "No coordinates available for: $placeName")
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -63,18 +172,74 @@ fun PlayerScreen(viewModel: LocationViewModel) {
             skipHiddenState = true
         )
     )
-    val scope = rememberCoroutineScope()
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 150.dp,
+        sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         sheetContent = {
-            MinioStreamScreen(onPlay = {
-                scope.launch {
-                    // Популярный API: expand(); если в твоей версии нет — используй animateTo(SheetValue.Expanded)
-                    scaffoldState.bottomSheetState.expand()
+
+            val configuration = LocalConfiguration.current
+            val sheetHeight = (configuration.screenHeightDp * 0.75f).dp
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(sheetHeight) // задаём максимальную высоту листа — 75% экрана
+            ) {
+
+                val currentState = scaffoldState.bottomSheetState.currentValue
+
+                AnimatedVisibility(
+                    visible = currentState == SheetValue.Expanded,
+                    enter = fadeIn() + expandVertically(
+                        expandFrom = Alignment.Top,
+                        animationSpec = tween(durationMillis = 300)
+                    ),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 200)) +
+                            shrinkVertically(
+                                shrinkTowards = Alignment.Top,
+                                animationSpec = tween(durationMillis = 200)
+                            )
+                ) {
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PlaceImage( viewModel = locationAudioViewModel)
+//                            Image(
+//                                painter = painterResource(id = R.drawable.plotinka),
+//                                contentDescription = "My Location",
+//                                modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+//                            )
+                        }
+                    }
                 }
-            })
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    AudioPlayerSheet(
+                        uiState = uiState,
+                        onPlayPause = {
+                            if (uiState.isPlaying) {
+                                locationAudioViewModel.pausePlayback()
+                            } else {
+                                locationAudioViewModel.resumePlayback()
+                            }
+                        },
+                        onSkipNext = { locationAudioViewModel.skipToNext() },
+                        onSkipPrevious = { locationAudioViewModel.skipToPrevious() }
+                    )
+                }
+            }
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -104,22 +269,45 @@ fun PlayerScreen(viewModel: LocationViewModel) {
                 modifier = Modifier.fillMaxSize()
             )
 
-            // --- FAB для центрирования карты ---
-            FloatingActionButton(
-                onClick = {
-                    locationOverlay?.myLocation?.let { loc ->
-                        mapView?.controller?.animateTo(loc)
-                    }
-                },
+            Column(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd) // правый нижний угол
-                    .padding(end = 20.dp, bottom = 180.dp) // отступы от краёв
-                    .size(56.dp)
+                    .fillMaxHeight()
+                    .wrapContentWidth()
+                    .align(Alignment.CenterEnd) // или Alignment.TopEnd, если хочешь прижать к верху
+                    .padding(end = 16.dp, top = 24.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.SpaceBetween, // распределит одну FAB сверху, другую снизу
+                horizontalAlignment = Alignment.End
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_my_location),
-                    contentDescription = "My Location"
-                )
+
+                // --- FAB для открытия экрана интересов---
+                FloatingActionButton(
+                    onClick = { onOpenInterests() }, // вызываем callback
+                    modifier = Modifier
+                        .padding(end = 10.dp, top = 40.dp)
+                        .size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_interests),
+                        contentDescription = "Interests"
+                    )
+                }
+
+                // --- FAB для центрирования карты ---
+                FloatingActionButton(
+                    onClick = {
+                        locationOverlay?.myLocation?.let { loc ->
+                            mapView?.controller?.animateTo(loc)
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(end = 10.dp, bottom = 180.dp)
+                        .size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_my_location),
+                        contentDescription = "My Location",
+                    )
+                }
             }
         }
     }

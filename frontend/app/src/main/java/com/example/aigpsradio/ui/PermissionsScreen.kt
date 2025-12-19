@@ -9,12 +9,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import com.example.aigpsradio.ui.theme.Typography
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,7 +25,7 @@ import com.example.aigpsradio.ui.theme.MyApplicationTheme
 
 @Composable
 fun PermissionItem(
-    icon: Int,
+    icon: Painter,
     title: String,
     subtitle: String,
     granted: Boolean
@@ -56,7 +56,7 @@ fun PermissionItem(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = icon),
+                        painter = icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp)
@@ -124,7 +124,6 @@ fun PermissionItem(
 fun PermissionsScreenSimple(
     locationGranted: Boolean = false,
     backgroundGranted: Boolean = false,
-    micGranted: Boolean = false,
     notifsGranted: Boolean = false,
     onContinue: () -> Unit
 ) {
@@ -178,7 +177,7 @@ fun PermissionsScreenSimple(
 
                 // Геолокация
                 PermissionItem(
-                    icon = R.drawable.ic_location,
+                    icon = painterResource(R.drawable.ic_location),
                     title = "Доступ к геолокации",
                     subtitle = "Для предоставления контента, основанного на вашем местоположении",
                     granted = locationGranted
@@ -186,31 +185,23 @@ fun PermissionsScreenSimple(
 
                 // Фоновая геолокация
                 PermissionItem(
-                    icon = R.drawable.ic_location,
+                    icon = painterResource(R.drawable.ic_maps),
                     title = "Фоновая геолокация",
                     subtitle = "Для воспроизведения радио и отслеживания в фоне",
                     granted = backgroundGranted
                 )
 
-                // Микрофон
-                PermissionItem(
-                    icon = R.drawable.mic,
-                    title = "Доступ к микрофону",
-                    subtitle = "Для голосового управления и выбора интересов",
-                    granted = micGranted
-                )
-
                 // Уведомления
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     PermissionItem(
-                        icon = R.drawable.notifications,
+                        icon = painterResource(R.drawable.notifications),
                         title = "Уведомления",
                         subtitle = "Разрешение на показ уведомлений для управления воспроизведением",
                         granted = notifsGranted
                     )
                 } else {
                     PermissionItem(
-                        icon = R.drawable.notifications,
+                        icon = painterResource(R.drawable.notifications),
                         title = "Уведомления (demo)",
                         subtitle = "Уведомления доступны на вашей версии",
                         granted = notifsGranted
@@ -230,8 +221,7 @@ fun TopAppBarSimple(title: String) {
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge
             )
         },
         modifier = Modifier.fillMaxWidth(),

@@ -13,17 +13,21 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.aigpsradio.data.preferences.InterestsPreferences
 import com.example.aigpsradio.ui.InterestsSelectionScreen
 import com.example.aigpsradio.ui.PermissionsScreenSimple
 import com.example.aigpsradio.ui.PlayerScreen
 import com.example.aigpsradio.ui.VoiceInterestsScreen
 import com.example.aigpsradio.viewmodel.LocationViewModel
+import com.example.aigpsradio.viewmodel.LocationAudioViewModel
 
 @Composable
 fun AppNavHost(
     navHostController: NavHostController,
     openPlayer: Boolean,
-    locationViewModel: LocationViewModel
+    locationViewModel: LocationViewModel,
+    locationAudioViewModel: LocationAudioViewModel,
+    interestsPreferences: InterestsPreferences
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
@@ -66,13 +70,6 @@ fun AppNavHost(
         }
     }
 
-    fun checkMicPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     fun checkNotifsPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
@@ -85,13 +82,12 @@ fun AppNavHost(
     }
     val permissionsGranted = checkLocationPermission() &&
             checkBackgroundPermission() &&
-            checkMicPermission() &&
             checkNotifsPermission()
 
     val startDestination = if (!permissionsGranted || isFirstLaunch) {
         Destination.Permission.route
     } else {
-        Destination.VoiceInterests.route
+        Destination.InterestsSelection.route
     }
 
     NavHost(
@@ -103,44 +99,38 @@ fun AppNavHost(
             // Перечитываем статус разрешений при каждом refreshTrigger
             val locationGranted = remember(refreshTrigger) { checkLocationPermission() }
             val backgroundGranted = remember(refreshTrigger) { checkBackgroundPermission() }
-            val micGranted = remember(refreshTrigger) { checkMicPermission() }
             val notifsGranted = remember(refreshTrigger) { checkNotifsPermission() }
 
             PermissionsScreenSimple(
                 locationGranted = locationGranted,
                 backgroundGranted = backgroundGranted,
-                micGranted = micGranted,
                 notifsGranted = notifsGranted,
                 onContinue = {
                     prefs.edit().putBoolean("is_first_launch", false).apply()
-                    navHostController.navigate(Destination.VoiceInterests.route) {
+                    navHostController.navigate(Destination.InterestsSelection.route) {
                         popUpTo(Destination.Permission.route) { inclusive = true }
                     }
                 }
             )
         }
-
-        composable(route = Destination.VoiceInterests.route) {
-            VoiceInterestsScreen(
-                onComplete = {
-                    navHostController.navigate(Destination.Player.route)
-                },
-                onSkip = {
-                    navHostController.navigate(Destination.InterestsSelection.route)
-                }
-            )
-        }
-
         composable(route = Destination.InterestsSelection.route) {
             InterestsSelectionScreen(
-                onContinue = {
-                    navHostController.navigate(Destination.Player.route)
-                }
+                onContinue = { navHostController.navigate(Destination.Player.route) },
+                onOpenVoiceInterests = {
+                    navHostController.navigate(Destination.VoiceInterests.route)
+                },
+                interestsPreferences = interestsPreferences,
             )
         }
 
         composable(route = Destination.Player.route) {
-            PlayerScreen(viewModel = locationViewModel)
+            PlayerScreen(
+                locationviewModel = locationViewModel,
+                locationAudioViewModel = locationAudioViewModel,
+                onOpenInterests = {
+                    navHostController.navigate(Destination.InterestsSelection.route)
+                }
+            )
         }
     }
 
